@@ -14,20 +14,18 @@ model Player {
   wins    Int    @default(0)
   losses  Int    @default(0)
 }
-
-model Match {
-  id        Int      @id @default(autoincrement())
-  teamAName String
-  teamBName String
-  scoreA    Int
-  scoreB    Int
-  createdAt DateTime @default(now())
-}
-
 model Expense {
   id        Int      @id @default(autoincrement())
   name      String
   payer     String
   amount    Float
+  createdAt DateTime @default(now())
+}
+model Match {
+  id        Int      @id @default(autoincrement())
+  team1     String
+  team2     String
+  score1    Int
+  score2    Int
   createdAt DateTime @default(now())
 }
