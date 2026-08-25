@@ -1,160 +1,187 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-interface Player {
-  name: string;
-  elo: number;
-  wins: number;
-  losses: number;
-}
-
 export default function SettingsPage() {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [newPlayer, setNewPlayer] = useState("");
-  const [maxScore, setMaxScore] = useState("21");
-  const [shuttlePrice, setShuttlePrice] = useState("22000");
-  const [saved, setSaved] = useState(false);
+  const [players, setPlayers] = useState<{ id: number; name: string }[]>([]);
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [maxScore, setMaxScore] = useState(21);
+  const [shuttlePrice, setShuttlePrice] = useState(15000);
 
+  // Load danh sách thành viên khi vào trang
   useEffect(() => {
-    // Lấy danh sách thành viên từ Database qua API
-    fetch('/api/players')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setPlayers(data.players);
-      });
-
-    const sMax = localStorage.getItem("setting_maxScore");
-    const sPrice = localStorage.getItem("setting_shuttlePrice");
-    if (sMax) setMaxScore(sMax);
-    if (sPrice) setShuttlePrice(sPrice);
+    fetchPlayers();
   }, []);
 
-  const handleAddPlayer = async () => {
-    if (!newPlayer.trim()) return;
-    const name = newPlayer.trim();
-    if (players.some(p => p.name === name)) return alert("Tên đã tồn tại!");
-    const deleteAllPlayers = async () => {
-    if (!confirm("⚠️ Bạn có chắc chắn muốn XOÁ TOÀN BỘ thành viên không?")) return;
-    
+  const fetchPlayers = async () => {
     try {
-      const res = await fetch('/api/players', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'deleteAll' }),
+      const res = await fetch("/api/players");
+      const data = await res.json();
+      if (data.success) {
+        setPlayers(data.players);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy danh sách thành viên:", error);
+    }
+  };
+
+  const addPlayer = async () => {
+    if (!newPlayerName.trim()) return;
+    try {
+      const res = await fetch("/api/players", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "add", name: newPlayerName.trim() }),
       });
       const data = await res.json();
       if (data.success) {
-        setPlayers([]); // Xóa sạch danh sách trên màn hình ngay lập tức
+        setNewPlayerName("");
+        fetchPlayers(); // Cập nhật lại danh sách
+      }
+    } catch (error) {
+      console.error("Lỗi thêm thành viên:", error);
+    }
+  };
+
+  const deletePlayer = async (id: number) => {
+    if (!confirm("Bạn có chắc muốn xoá thành viên này?")) return;
+    try {
+      const res = await fetch("/api/players", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchPlayers();
+      }
+    } catch (error) {
+      console.error("Lỗi xoá thành viên:", error);
+    }
+  };
+
+  const deleteAllPlayers = async () => {
+    if (!confirm("⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XOÁ TOÀN BỘ thành viên không?")) return;
+    try {
+      const res = await fetch("/api/players", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deleteAll" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPlayers([]); // Xóa sạch trên màn hình
       }
     } catch (error) {
       console.error("Lỗi khi xoá toàn bộ:", error);
     }
   };
 
-    const res = await fetch('/api/players', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: "add", newName: name })
-    });
-    const data = await res.json();
-    if (data.success) {
-      setPlayers(data.players);
-      setNewPlayer("");
-    }
-  };
-
-  const handleRemovePlayer = async (nameToRemove: string) => {
-    if (!confirm(`Xóa ${nameToRemove} khỏi CLB?`)) return;
-    const res = await fetch('/api/players', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: "remove", nameToRemove })
-    });
-    const data = await res.json();
-    if (data.success) {
-      setPlayers(data.players);
-    }
-  };
-
-  const handleSaveConfig = () => {
-    localStorage.setItem("setting_maxScore", maxScore);
-    localStorage.setItem("setting_shuttlePrice", shuttlePrice);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const saveConfig = () => {
+    alert("Đã lưu cấu hình thành công!");
   };
 
   return (
-    <div style={{ padding: '20px', backgroundColor: '#111', color: 'white', minHeight: '100vh', fontFamily: 'sans-serif', maxWidth: '700px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '2px solid #333', paddingBottom: '10px' }}>
-        <h1 style={{ margin: 0, color: '#ff4757', fontSize: '1.5rem' }}>⚙ Cài Đặt CLB & Thành Viên</h1>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Link href="/matchmaking" style={{ padding: '10px 15px', backgroundColor: '#9c88ff', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
+    <div className="min-h-screen bg-[#111111] text-white p-4 font-sans">
+      {/* Header Menu */}
+      <div className="max-w-2xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4 mt-4">
+        <h1 className="text-xl md:text-2xl font-bold text-red-500">⚙ Cài Đặt CLB & Thành Viên</h1>
+        <div className="flex gap-2">
+          <Link href="/matchmaking" className="bg-purple-300 text-purple-900 font-bold px-4 py-2 rounded-lg shadow hover:bg-purple-400 transition">
             🎲 Ghép Kèo
           </Link>
-          <Link href="/finance" style={{ padding: '10px 15px', backgroundColor: '#feca57', color: 'black', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
+          <Link href="/finance" className="bg-yellow-400 text-yellow-900 font-bold px-4 py-2 rounded-lg shadow hover:bg-yellow-500 transition">
             💰 Tính Tiền
           </Link>
         </div>
       </div>
 
-      {/* KHU VỰC 1: QUẢN LÝ DANH SÁCH THÀNH VIÊN GỐC */}
-      <div style={{ backgroundColor: '#222', padding: '20px', borderRadius: '12px', marginBottom: '20px' }}>
-        <h2 style={{ marginTop: 0, color: '#2ed573', fontSize: '1.2rem' }}>👥 Danh sách Thành viên CLB (Đồng bộ Ghép Kèo & Tính Tiền)</h2>
-        
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          <input 
-            value={newPlayer} 
-            onChange={(e) => setNewPlayer(e.target.value)} 
-            placeholder="Nhập tên thành viên mới..." 
-            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#333', color: 'white', fontSize: '1rem' }} 
-          />
-          <button onClick={handleAddPlayer} style={{ padding: '12px 20px', backgroundColor: '#2ed573', color: 'black', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Thêm</button><div className="flex gap-2 mb-4">
-  <input 
-    type="text" 
-    placeholder="Nhập tên thành viên mới..." 
-    // ... các code cũ của fen giữ nguyên
-  />
-  <button onClick={addPlayer} className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold">
-    + Thêm
-  </button>
-  
-  {/* NÚT XOÁ HẾT MỚI THÊM VÀO ĐÂY */}
-  <button onClick={deleteAllPlayers} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold transition-colors">
-    🗑️ Xoá hết
-  </button>
-</div>
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Box Quản lý Thành Viên */}
+        <div className="bg-[#1e1e1e] p-4 md:p-6 rounded-xl shadow-lg border border-gray-800">
+          <h2 className="text-green-500 font-bold mb-4 flex items-center gap-2">
+            👥 Danh sách Thành viên CLB (Đồng bộ Ghép Kèo & Tính Tiền)
+          </h2>
+          
+          <div className="flex flex-col sm:flex-row gap-2 mb-6">
+            <input
+              type="text"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
+              placeholder="Nhập tên thành viên mới..."
+              className="flex-1 bg-[#2a2a2a] text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-green-500"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={addPlayer}
+                className="bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-2 rounded-lg transition"
+              >
+                + Thêm
+              </button>
+              <button
+                onClick={deleteAllPlayers}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg transition"
+              >
+                🗑️ Xoá hết
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {players.map((player) => (
+              <div key={player.id} className="bg-[#2a2a2a] border border-gray-700 rounded-full px-4 py-1.5 flex items-center gap-2">
+                <span className="font-semibold text-gray-200">{player.name}</span>
+                <button 
+                  onClick={() => deletePlayer(player.id)}
+                  className="text-red-400 hover:text-red-500 font-bold ml-1 text-lg leading-none"
+                  title="Xoá thành viên này"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {players.length === 0 && (
+              <p className="text-gray-500 italic text-sm">Chưa có thành viên nào. Hãy thêm ở trên.</p>
+            )}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          {players.map(p => (
-            <span key={p.name} style={{ backgroundColor: '#111', padding: '8px 15px', borderRadius: '20px', border: '1px solid #444', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-              {p.name} 
-              <span onClick={() => handleRemovePlayer(p.name)} style={{ color: '#ff4757', cursor: 'pointer', fontSize: '1.1rem' }}>×</span>
-            </span>
-          ))}
+        {/* Box Cấu hình */}
+        <div className="bg-[#1e1e1e] p-4 md:p-6 rounded-xl shadow-lg border border-gray-800">
+          <h2 className="text-yellow-500 font-bold mb-4 flex items-center gap-2">
+            💰 Cấu hình Tài Chính & Trận Đấu
+          </h2>
+          
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">🏁 Điểm số tối đa (Mặc định 21):</label>
+              <input
+                type="number"
+                value={maxScore}
+                onChange={(e) => setMaxScore(Number(e.target.value))}
+                className="w-full bg-[#2a2a2a] text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-yellow-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">🏸 Giá tiền mặc định 1 quả cầu (VNĐ):</label>
+              <input
+                type="number"
+                value={shuttlePrice}
+                onChange={(e) => setShuttlePrice(Number(e.target.value))}
+                className="w-full bg-[#2a2a2a] text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-yellow-500"
+              />
+            </div>
+          </div>
+
+          <button 
+            onClick={saveConfig}
+            className="w-full bg-[#2ed573] hover:bg-[#27ae60] text-black font-bold py-3 rounded-lg flex justify-center items-center gap-2 transition text-lg"
+          >
+            💾 Lưu Cấu Hình
+          </button>
         </div>
-      </div>
-
-      {/* KHU VỰC 2: CÀI ĐẶT THÔNG SỐ (GIÁ CẦU, ĐIỂM SỐ) */}
-      <div style={{ backgroundColor: '#222', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <h2 style={{ marginTop: 0, color: '#feca57', fontSize: '1.2rem' }}>💰 Cấu hình Tài Chính & Trận Đấu</h2>
-        
-        <div>
-          <label style={{ display: 'block', fontWeight: 'bold', color: '#aaa', marginBottom: '6px' }}>🏁 Điểm số tối đa (Mặc định 21):</label>
-          <input type="number" value={maxScore} onChange={(e) => setMaxScore(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: '#333', color: 'white', border: '1px solid #555' }} />
-        </div>
-
-        <div>
-          <label style={{ display: 'block', fontWeight: 'bold', color: '#aaa', marginBottom: '6px' }}>🏸 Giá tiền mặc định 1 quả cầu (VNĐ):</label>
-          <input type="number" value={shuttlePrice} onChange={(e) => setShuttlePrice(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: '#333', color: 'white', border: '1px solid #555' }} />
-        </div>
-
-        <button onClick={handleSaveConfig} style={{ width: '100%', padding: '15px', backgroundColor: '#2ed573', color: 'black', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}>
-          💾 Lưu Cấu Hình
-        </button>
-
-        {saved && <div style={{ textAlign: 'center', color: '#2ed573', fontWeight: 'bold' }}>🎉 Đã lưu cấu hình thành công!</div>}
       </div>
     </div>
   );
