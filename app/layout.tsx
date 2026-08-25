@@ -2,14 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Cấu hình Metadata chung cho PWA
 export const metadata: Metadata = {
   title: "Badminton Club",
   description: "App quản lý hội cầu lông",
   manifest: "/manifest.json",
 };
 
-// Cấu hình Viewport (Theme color cho PWA)
 export const viewport: Viewport = {
   themeColor: "#111111",
 };
@@ -33,13 +31,13 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} h-full antialiased min-h-full flex flex-col bg-[#111111]`}>
         
-        {/* Phần nội dung chính */}
-        <div className="flex-1 pb-4">
+        {/* Lớp z-10 này sẽ kéo tất cả các nút bấm nổi lên trên cùng */}
+        <div className="flex-1 relative z-10 pb-4">
           {children}
         </div>
 
-        {/* ĐÓNG DẤU BẢN QUYỀN - Đã thêm pb-32 để đẩy chữ lên cao không bị nút đè */}
-        <footer className="w-full text-center pt-8 pb-32 mt-auto bg-[#111111]">
+        {/* Chữ ký được đặt z-0 và bỏ nền đen để không che mất nút */}
+        <footer className="w-full text-center pt-8 pb-32 mt-auto relative z-0">
           <p className="text-gray-500 text-[11px] uppercase tracking-[0.2em] mb-1">
             Developed by
           </p>
