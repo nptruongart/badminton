@@ -1,148 +1,95 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
-interface Match {
+interface MatchRecord {
   id: number;
-  teamAName: string;
-  teamBName: string;
-  scoreA: number;
-  scoreB: number;
+  team1: string;
+  team2: string;
+  score1: number;
+  score2: number;
   createdAt: string;
 }
 
 export default function HistoryPage() {
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(""); // Trạng thái ô tìm kiếm
 
-  const fetchMatches = () => {
+  useEffect(() => {
     fetch('/api/matches')
-      .then((res) => res.json())
-      .then((data) => {
+      .then(res => res.json())
+      .then(data => {
         if (data.success) {
           setMatches(data.matches);
         }
         setLoading(false);
       })
-      .catch((err) => {
+      .catch(err => {
         console.error("Lỗi tải lịch sử:", err);
         setLoading(false);
       });
-  };
-
-  useEffect(() => {
-    fetchMatches();
   }, []);
 
-  const handleDeleteAllHistory = async () => {
-    if (!confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử đấu không? Hành động này không thể hoàn tác!")) return;
-
-    try {
-      const res = await fetch('/api/matches', {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMatches([]);
-        alert("Đã dọn sạch lịch sử thi đấu! 🧹");
-      } else {
-        alert("Có lỗi xảy ra khi xóa lịch sử!");
-      }
-    } catch (error) {
-      alert("Mất kết nối đến Server!");
-    }
-  };
-
-  // 🔍 THUẬT TOÁN LỌC TÌM KIẾM THEO TÊN THÀNH VIÊN HOẶC NGÀY THÁNG
-  const filteredMatches = matches.filter(match => {
-    const term = searchTerm.toLowerCase();
-    const dateStr = new Date(match.createdAt).toLocaleDateString('vi-VN'); // Định dạng Ngày/Tháng/Năm
-    return (
-      match.teamAName.toLowerCase().includes(term) ||
-      match.teamBName.toLowerCase().includes(term) ||
-      dateStr.includes(term)
-    );
-  });
-
-  if (loading) {
-    return (
-      <div style={{ padding: '50px', textAlign: 'center', backgroundColor: '#111', color: 'white', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-        Đang tải lịch sử đấu...
-      </div>
-    );
-  }
-
   return (
-    <div style={{ padding: '20px', backgroundColor: '#111', color: 'white', minHeight: '100vh', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #333', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
-        <h1 style={{ margin: 0, color: '#1e90ff', fontSize: '1.5rem' }}>📊 Lịch Sử Thi Đấu & Tra Cứu</h1>
-        
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {matches.length > 0 && (
-            <button 
-              onClick={handleDeleteAllHistory}
-              style={{ padding: '10px 15px', backgroundColor: '#ff4757', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              🗑 Xoá Lịch Sử
-            </button>
-          )}
-          <Link href="/" style={{ padding: '10px 20px', backgroundColor: '#333', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
-            ⬅ Trang Chủ
-          </Link>
-        </div>
+    <div className="min-h-screen bg-[#111111] text-white p-4 font-sans pb-20">
+      {/* Header */}
+      <div className="max-w-2xl mx-auto flex justify-between items-center mb-8 mt-4 border-b border-gray-800 pb-4">
+        <h1 className="text-xl md:text-2xl font-bold text-[#1890ff] flex items-center gap-2">
+          📊 Lịch Sử Trận Đấu
+        </h1>
+        <Link href="/" className="bg-[#333] hover:bg-[#444] text-white px-4 py-2 rounded-lg font-bold transition">
+          ⬅ Quay lại
+        </Link>
       </div>
 
-      {/* 🔍 Ô TÌM KIẾM / LỌC KÈO */}
-      <div style={{ marginBottom: '20px' }}>
-        <input 
-          type="text" 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)} 
-          placeholder="🔍 Tìm kiếm theo tên tay vợt hoặc ngày (VD: Lien, 25/06)..." 
-          style={{ width: '100%', padding: '14px', borderRadius: '8px', backgroundColor: '#222', color: 'white', border: '1px solid #555', fontSize: '1rem', fontWeight: 'bold' }} 
-        />
-      </div>
+      <div className="max-w-2xl mx-auto space-y-4">
+        {loading ? (
+          <div className="text-center text-gray-500 py-10 animate-pulse">
+            ⏳ Đang tải dữ liệu lịch sử...
+          </div>
+        ) : matches.length === 0 ? (
+          <div className="text-center bg-[#1e1e1e] p-10 rounded-xl border border-gray-800 text-gray-500">
+            Chưa có trận đấu nào được lưu. Hãy ra sân và ghi điểm nhé! 🏸
+          </div>
+        ) : (
+          matches.map((match) => (
+            <div key={match.id} className="bg-[#1e1e1e] p-4 md:p-5 rounded-xl shadow-lg border border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 hover:border-gray-600 transition">
+              
+              {/* Cột thời gian */}
+              <div className="text-gray-500 text-sm md:w-1/4 text-center md:text-left">
+                {new Date(match.createdAt).toLocaleString('vi-VN', {
+                  hour: '2-digit', minute:'2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
+                })}
+              </div>
 
-      {filteredMatches.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#888', padding: '50px 0', fontSize: '1.2rem' }}>
-          {matches.length === 0 ? "Chưa có trận đấu nào được lưu trong Database!" : "Không tìm thấy trận đấu phù hợp với từ khóa này!"}
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          {filteredMatches.map((match) => {
-            // Hiển thị chi tiết Ngày, Tháng, Năm và Giờ chuẩn tiếng Việt
-            const dateObj = new Date(match.createdAt);
-            const timeFormatted = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-            const dateFormatted = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-            const isTeamAWon = match.scoreA > match.scoreB;
-            const isTeamBWon = match.scoreB > match.scoreA;
-
-            return (
-              <div key={match.id} style={{ backgroundColor: '#222', padding: '15px 20px', borderRadius: '10px', border: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                <div>
-                  {/* Nhãn Ngày Tháng Năm rõ ràng */}
-                  <div style={{ fontSize: '0.85rem', color: '#feca57', marginBottom: '5px', fontWeight: 'bold' }}>
-                    📅 Ngày {dateFormatted} - ⏰ {timeFormatted}
-                  </div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-                    <span style={{ color: isTeamAWon ? '#2ed573' : '#ff4757' }}>{match.teamAName}</span>
-                    <span style={{ color: '#fff', margin: '0 10px' }}>VS</span>
-                    <span style={{ color: isTeamBWon ? '#2ed573' : '#1e90ff' }}>{match.teamBName}</span>
+              {/* Cột Tỷ số */}
+              <div className="flex items-center justify-center gap-4 flex-1 w-full">
+                {/* Đội 1 */}
+                <div className="flex-1 text-right">
+                  <div className={`font-bold text-lg ${match.score1 > match.score2 ? 'text-green-500' : 'text-gray-300'}`}>
+                    {match.team1}
                   </div>
                 </div>
 
-                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', backgroundColor: '#111', padding: '8px 20px', borderRadius: '8px', border: '1px solid #444' }}>
-                  <span style={{ color: '#ff4757' }}>{match.scoreA}</span>
-                  <span style={{ color: '#888', margin: '0 8px' }}>-</span>
-                  <span style={{ color: '#1e90ff' }}>{match.scoreB}</span>
+                {/* Điểm số */}
+                <div className="bg-[#2a2a2a] px-4 py-2 rounded-lg font-black text-xl tracking-widest min-w-[100px] text-center border border-gray-700 shadow-inner">
+                  <span className={match.score1 > match.score2 ? 'text-green-500' : 'text-white'}>{match.score1}</span>
+                  <span className="text-gray-500 mx-2">-</span>
+                  <span className={match.score2 > match.score1 ? 'text-green-500' : 'text-white'}>{match.score2}</span>
+                </div>
+
+                {/* Đội 2 */}
+                <div className="flex-1 text-left">
+                  <div className={`font-bold text-lg ${match.score2 > match.score1 ? 'text-green-500' : 'text-gray-300'}`}>
+                    {match.team2}
+                  </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
