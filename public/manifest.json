@@ -1,0 +1,17 @@
+{
+  "name": "Badminton Club",
+  "short_name": "Cầu Lông",
+  "description": "App quản lý hội cầu lông",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#1890ff",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
