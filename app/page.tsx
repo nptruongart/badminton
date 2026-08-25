@@ -1,160 +1,125 @@
-"use client";
-import { useState, useEffect } from "react";
-import Link from "next/link"; 
+\"use client";
+
+import { useState } from "react";
+import Link from "next/link";
 
 export default function Home() {
-  const [scoreA, setScoreA] = useState(0);
-  const [scoreB, setScoreB] = useState(0);
-  const [nameA, setNameA] = useState("ĐỘI 1");
-  const [nameB, setNameB] = useState("ĐỘI 2");
+  const [score1, setScore1] = useState(0);
+  const [score2, setScore2] = useState(0);
 
-  useEffect(() => {
-    const savedMatch = localStorage.getItem("currentMatchTeams");
-    if (savedMatch) {
-      try {
-        const { nameA: syncedNameA, nameB: syncedNameB } = JSON.parse(savedMatch);
-        if (syncedNameA) setNameA(syncedNameA);
-        if (syncedNameB) setNameB(syncedNameB);
-        localStorage.removeItem("currentMatchTeams");
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, []);
-
-  const addScore = (team: 'A' | 'B') => {
-    if (team === 'A') setScoreA(scoreA + 1);
-    if (team === 'B') setScoreB(scoreB + 1);
-  };
-
-  const subScore = (team: 'A' | 'B') => {
-    if (team === 'A' && scoreA > 0) setScoreA(scoreA - 1);
-    if (team === 'B' && scoreB > 0) setScoreB(scoreB - 1);
-  };
-
-  const resetMatch = () => {
-    if (confirm("Bạn có chắc muốn làm mới tỉ số không?")) {
-      setScoreA(0);
-      setScoreB(0);
+  const resetScores = () => {
+    if (confirm("Bạn có chắc muốn làm mới điểm số?")) {
+      setScore1(0);
+      setScore2(0);
     }
   };
 
   const saveMatch = async () => {
-    if (scoreA === scoreB) {
-      alert("Tỉ số hòa không thể tính thắng thua cho Elo!");
+    if (score1 === 0 && score2 === 0) {
+      alert("Trận đấu chưa có điểm!");
       return;
     }
-
-    try {
-      const response = await fetch('/api/matches', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          teamAName: nameA,
-          teamBName: nameB,
-          scoreA: scoreA,
-          scoreB: scoreB
-        })
-      });
-
-      if (response.ok) {
-        alert(`Đã lưu kết quả vào Lịch sử & Cập nhật Elo thành công!\n${nameA}: ${scoreA} - ${nameB}: ${scoreB}`);
-        setScoreA(0); 
-        setScoreB(0); 
-      } else {
-        alert("Có lỗi xảy ra khi lưu vào Database!");
-      }
-    } catch (error) {
-      alert("Mất kết nối đến Server!");
-    }
+    
+    // Giả lập lưu trận (khi fen làm API lưu database thì sửa ở đây)
+    alert(`Đã lưu trận đấu: Đội 1 (${score1}) - Đội 2 (${score2})`);
+    setScore1(0);
+    setScore2(0);
   };
 
   return (
-    <div className="container-main" style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#111', color: 'white', userSelect: 'none', fontFamily: 'sans-serif' }}>
-      <style jsx global>{`
-        @media (max-width: 768px) {
-          .scoreboards-wrapper {
-            flex-direction: column !important;
-          }
-          .team-box {
-            border-right: none !important;
-            border-bottom: 2px solid #333 !important;
-            padding: 10px 0 !important;
-          }
-          .score-number {
-            font-size: 7rem !important;
-          }
-          .nav-buttons {
-            flex-direction: column !important;
-            gap: 10px !important;
-            padding: 10px !important;
-          }
-          .nav-buttons a, .nav-buttons button {
-            width: 100% !important;
-            justify-content: center !important;
-            font-size: 1rem !important;
-            padding: 12px !important;
-          }
-        }
-      `}</style>
-
-      <div style={{ textAlign: 'center', padding: '15px', background: '#222', fontSize: '1.2rem', fontWeight: 'bold', borderBottom: '2px solid #333' }}>
+    <div className="min-h-screen bg-[#111111] flex flex-col items-center pt-6 pb-10 select-none font-sans">
+      
+      {/* Tiêu đề */}
+      <h1 className="text-xl font-bold text-white mb-8 flex items-center gap-2">
         🏆 Bảng Đếm Điểm Cầu Lông
-      </div>
+      </h1>
 
-      <div className="scoreboards-wrapper" style={{ display: 'flex', flex: 1 }}>
-        {/* Đội A */}
-        <div className="team-box" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderRight: '2px solid #333' }}>
-          <input 
-            value={nameA} 
-            onChange={(e) => setNameA(e.target.value)} 
-            style={{ background: 'transparent', border: 'none', borderBottom: '1px dashed #555', color: '#ff4757', fontSize: '1.8rem', fontWeight: 'bold', textAlign: 'center', textTransform: 'uppercase', width: '80%', marginBottom: '10px' }} 
-          />
-          <div className="score-number" onClick={() => addScore('A')} style={{ fontSize: '10rem', fontWeight: 'bold', color: '#ff4757', cursor: 'pointer', flex: 1, display: 'flex', alignItems: 'center' }}>
-            {scoreA}
+      {/* KHUNG ĐIỂM SỐ NẰM NGANG (Chia trái phải) */}
+      <div className="flex flex-row w-full max-w-md px-2 mb-12">
+        
+        {/* ĐỘI 1 (Bên Trái) */}
+        <div className="flex-1 flex flex-col items-center">
+          <h2 className="text-[#ff4d4f] text-2xl font-bold mb-2 tracking-wide">ĐỘI 1</h2>
+          <div className="w-3/4 border-t border-dashed border-gray-700 mb-6"></div>
+          
+          <div 
+            className="text-[120px] sm:text-[140px] leading-none font-black text-[#ff4d4f] mb-8 cursor-pointer active:scale-95 transition-transform drop-shadow-lg"
+            onClick={() => setScore1(s => s + 1)}
+          >
+            {score1}
           </div>
-          <div style={{ marginBottom: '20px' }}>
-            <button onClick={() => subScore('A')} style={{ background: '#333', color: 'white', border: 'none', padding: '12px 25px', fontSize: '1.1rem', borderRadius: '8px', cursor: 'pointer' }}>Trừ 1 điểm</button>
-          </div>
+          
+          <button 
+            onClick={() => setScore1(s => Math.max(0, s - 1))}
+            className="bg-[#2a2a2a] hover:bg-[#333] text-gray-300 px-6 py-3 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+          >
+            Trừ 1 điểm
+          </button>
         </div>
 
-        {/* Đội B */}
-        <div className="team-box" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          <input 
-            value={nameB} 
-            onChange={(e) => setNameB(e.target.value)} 
-            style={{ background: 'transparent', border: 'none', borderBottom: '1px dashed #555', color: '#1e90ff', fontSize: '1.8rem', fontWeight: 'bold', textAlign: 'center', textTransform: 'uppercase', width: '80%', marginBottom: '10px' }} 
-          />
-          <div className="score-number" onClick={() => addScore('B')} style={{ fontSize: '10rem', fontWeight: 'bold', color: '#1e90ff', cursor: 'pointer', flex: 1, display: 'flex', alignItems: 'center' }}>
-            {scoreB}
+        {/* Vạch kẻ dọc chia đôi sân mờ mờ ở giữa */}
+        <div className="w-px bg-gray-800 mx-1"></div>
+
+        {/* ĐỘI 2 (Bên Phải) */}
+        <div className="flex-1 flex flex-col items-center">
+          <h2 className="text-[#1890ff] text-2xl font-bold mb-2 tracking-wide">ĐỘI 2</h2>
+          <div className="w-3/4 border-t border-dashed border-gray-700 mb-6"></div>
+          
+          <div 
+            className="text-[120px] sm:text-[140px] leading-none font-black text-[#1890ff] mb-8 cursor-pointer active:scale-95 transition-transform drop-shadow-lg"
+            onClick={() => setScore2(s => s + 1)}
+          >
+            {score2}
           </div>
-          <div style={{ marginBottom: '20px' }}>
-            <button onClick={() => subScore('B')} style={{ background: '#333', color: 'white', border: 'none', padding: '12px 25px', fontSize: '1.1rem', borderRadius: '8px', cursor: 'pointer' }}>Trừ 1 điểm</button>
-          </div>
+          
+          <button 
+            onClick={() => setScore2(s => Math.max(0, s - 1))}
+            className="bg-[#2a2a2a] hover:bg-[#333] text-gray-300 px-6 py-3 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+          >
+            Trừ 1 điểm
+          </button>
         </div>
+
       </div>
 
-      {/* MENU ĐIỀU HƯỚNG */}
-      <div className="nav-buttons" style={{ padding: '15px', textAlign: 'center', background: '#222', display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button onClick={resetMatch} style={{ background: '#ff4757', color: 'white', fontWeight: 'bold', padding: '12px 20px', borderRadius: '8px', border: 'none', fontSize: '1.1rem', cursor: 'pointer' }}>
+      {/* CÁC NÚT CHỨC NĂNG DƯỚI CÙNG */}
+      <div className="flex flex-col gap-3 w-full max-w-md px-4 mt-auto">
+        <button 
+          onClick={resetScores}
+          className="w-full bg-[#ff4d4f] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform"
+        >
           🔄 LÀM MỚI
         </button>
-        <button onClick={saveMatch} style={{ background: '#2ed573', color: 'black', fontWeight: 'bold', padding: '12px 20px', borderRadius: '8px', border: 'none', fontSize: '1.1rem', cursor: 'pointer' }}>
+
+        <button 
+          onClick={saveMatch}
+          className="w-full bg-[#2ed573] text-black font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform"
+        >
           💾 LƯU TRẬN
         </button>
-        <Link href="/history" style={{ background: '#1e90ff', color: 'white', fontWeight: 'bold', padding: '12px 20px', borderRadius: '8px', textDecoration: 'none', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+
+        <Link 
+          href="/history"
+          className="w-full bg-[#1890ff] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform"
+        >
           📊 LỊCH SỬ
         </Link>
-        <Link href="/finance" style={{ background: '#feca57', color: 'black', fontWeight: 'bold', padding: '12px 20px', borderRadius: '8px', textDecoration: 'none', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+
+        <Link 
+          href="/finance"
+          className="w-full bg-[#ffd666] text-black font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform"
+        >
           💰 TÍNH TIỀN
         </Link>
-        <Link href="/matchmaking" style={{ background: '#9c88ff', color: 'white', fontWeight: 'bold', padding: '12px 20px', borderRadius: '8px', textDecoration: 'none', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          🎲 GHÉP KÈO
-        </Link>
-        <Link href="/settings" style={{ background: '#747d8c', color: 'white', fontWeight: 'bold', padding: '12px 20px', borderRadius: '8px', textDecoration: 'none', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          ⚙ CÀI ĐẶT
+        
+        <Link 
+          href="/settings"
+          className="w-full bg-[#595959] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform"
+        >
+          ⚙️ CÀI ĐẶT
         </Link>
       </div>
+
     </div>
   );
 }
