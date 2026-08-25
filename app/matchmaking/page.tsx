@@ -187,13 +187,11 @@ export default function MatchmakingPage() {
     localStorage.setItem("savedCurrentMatches", JSON.stringify(assignedMatches));
   };
 
+  // 🚀 ĐÂY LÀ CHỖ TÔI ĐÃ SỬA: Đóng gói tên 2 đội bắn thẳng qua URL cho Bảng Điểm
   const sendToScoreboard = (team1: string[], team2: string[]) => {
-    const dataToSend = {
-      nameA: team1.join(" & "),
-      nameB: team2.join(" & ")
-    };
-    localStorage.setItem("currentMatchTeams", JSON.stringify(dataToSend));
-    router.push("/");
+    const t1 = encodeURIComponent(team1.join(" & "));
+    const t2 = encodeURIComponent(team2.join(" & "));
+    router.push(`/?t1=${t1}&t2=${t2}`);
   };
 
   const copyMatchesToClipboard = () => {

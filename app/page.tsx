@@ -1,10 +1,25 @@
 "use client";
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function Home() {
   const [score1, setScore1] = useState(0);
   const [score2, setScore2] = useState(0);
+
+  // Khai báo sẵn chỗ chứa tên 2 đội
+  const [team1Name, setTeam1Name] = useState("ĐỘI 1");
+  const [team2Name, setTeam2Name] = useState("ĐỘI 2");
+
+  // Tự động chộp lấy tên đội từ trang Ghép Kèo ném sang
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const t1 = params.get("t1");
+    const t2 = params.get("t2");
+
+    if (t1) setTeam1Name(decodeURIComponent(t1));
+    if (t2) setTeam2Name(decodeURIComponent(t2));
+  }, []);
 
   const resetScores = () => {
     if (confirm("Bạn có chắc muốn làm mới điểm số?")) {
@@ -18,9 +33,7 @@ export default function Home() {
       alert("Trận đấu chưa có điểm!");
       return;
     }
-    
-    // Giả lập lưu trận (khi fen làm API lưu database thì sửa ở đây)
-    alert(`Đã lưu trận đấu: Đội 1 (${score1}) - Đội 2 (${score2})`);
+    alert(`Đã lưu trận đấu: ${team1Name} (${score1}) - ${team2Name} (${score2})`);
     setScore1(0);
     setScore2(0);
   };
@@ -28,17 +41,19 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center pt-6 pb-10 select-none font-sans">
       
-      {/* Tiêu đề */}
       <h1 className="text-xl font-bold text-white mb-8 flex items-center gap-2">
         🏆 Bảng Đếm Điểm Cầu Lông
       </h1>
 
-      {/* KHUNG ĐIỂM SỐ NẰM NGANG (Chia trái phải) */}
+      {/* KHUNG ĐIỂM SỐ NẰM NGANG */}
       <div className="flex flex-row w-full max-w-md px-2 mb-12">
         
-        {/* ĐỘI 1 (Bên Trái) */}
+        {/* ĐỘI 1 */}
         <div className="flex-1 flex flex-col items-center">
-          <h2 className="text-[#ff4d4f] text-2xl font-bold mb-2 tracking-wide">ĐỘI 1</h2>
+          {/* h-14 giúp cố định chiều cao tên, không làm lệch 2 số điểm nếu tên quá dài */}
+          <h2 className="text-[#ff4d4f] text-lg md:text-xl font-bold mb-2 tracking-wide text-center h-14 flex items-center justify-center">
+            {team1Name}
+          </h2>
           <div className="w-3/4 border-t border-dashed border-gray-700 mb-6"></div>
           
           <div 
@@ -56,12 +71,13 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Vạch kẻ dọc chia đôi sân mờ mờ ở giữa */}
         <div className="w-px bg-gray-800 mx-1"></div>
 
-        {/* ĐỘI 2 (Bên Phải) */}
+        {/* ĐỘI 2 */}
         <div className="flex-1 flex flex-col items-center">
-          <h2 className="text-[#1890ff] text-2xl font-bold mb-2 tracking-wide">ĐỘI 2</h2>
+          <h2 className="text-[#1890ff] text-lg md:text-xl font-bold mb-2 tracking-wide text-center h-14 flex items-center justify-center">
+            {team2Name}
+          </h2>
           <div className="w-3/4 border-t border-dashed border-gray-700 mb-6"></div>
           
           <div 
@@ -78,16 +94,24 @@ export default function Home() {
             Trừ 1 điểm
           </button>
         </div>
-
       </div>
 
       {/* CÁC NÚT CHỨC NĂNG DƯỚI CÙNG */}
       <div className="flex flex-col gap-3 w-full max-w-md px-4 mt-auto">
+        
+        {/* NÚT QUAY VỀ GHÉP KÈO */}
+        <Link 
+          href="/matchmaking"
+          className="w-full bg-[#9b59b6] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform"
+        >
+          ⚡ GHÉP KÈO TRẬN MỚI
+        </Link>
+
         <button 
           onClick={resetScores}
           className="w-full bg-[#ff4d4f] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform"
         >
-          🔄 LÀM MỚI
+          🔄 LÀM MỚI ĐIỂM
         </button>
 
         <button 
