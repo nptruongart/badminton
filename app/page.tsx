@@ -26,7 +26,6 @@ export default function Home() {
     }
   };
 
-  // 🔥 ĐÂY LÀ HÀM LƯU TRẬN ĐÃ ĐƯỢC GẮN API
   const saveMatch = async () => {
     if (score1 === 0 && score2 === 0) {
       alert("Trận đấu chưa có điểm!");
@@ -64,9 +63,13 @@ export default function Home() {
       <div className="flex flex-row w-full max-w-md px-2 mb-12">
         {/* ĐỘI 1 */}
         <div className="flex-1 flex flex-col items-center">
-          <h2 className="text-[#ff4d4f] text-lg md:text-xl font-bold mb-2 tracking-wide text-center h-14 flex items-center justify-center">
-            {team1Name}
-          </h2>
+          {/* Ô nhập liệu cho phép gõ tay, bình thường tàng hình như text */}
+          <input
+            type="text"
+            value={team1Name}
+            onChange={(e) => setTeam1Name(e.target.value)}
+            className="w-[90%] bg-transparent text-[#ff4d4f] text-lg md:text-xl font-bold mb-2 tracking-wide text-center h-14 focus:outline-none focus:bg-[#222] rounded-lg transition-colors"
+          />
           <div className="w-3/4 border-t border-dashed border-gray-700 mb-6"></div>
           
           <div 
@@ -88,9 +91,13 @@ export default function Home() {
 
         {/* ĐỘI 2 */}
         <div className="flex-1 flex flex-col items-center">
-          <h2 className="text-[#1890ff] text-lg md:text-xl font-bold mb-2 tracking-wide text-center h-14 flex items-center justify-center">
-            {team2Name}
-          </h2>
+          {/* Ô nhập liệu cho phép gõ tay, bình thường tàng hình như text */}
+          <input
+            type="text"
+            value={team2Name}
+            onChange={(e) => setTeam2Name(e.target.value)}
+            className="w-[90%] bg-transparent text-[#1890ff] text-lg md:text-xl font-bold mb-2 tracking-wide text-center h-14 focus:outline-none focus:bg-[#222] rounded-lg transition-colors"
+          />
           <div className="w-3/4 border-t border-dashed border-gray-700 mb-6"></div>
           
           <div 
