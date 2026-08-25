@@ -3,24 +3,34 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+export async function GET() {
+  try {
+    const expenses = await prisma.expense.findMany({ orderBy: { id: 'desc' } });
+    return NextResponse.json({ success: true, expenses });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: "Lỗi tải dữ liệu thu chi" }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { tienSan, soCau, giaCau, soNguoi, tongTien, chiaDeu } = body;
+    const { action, name, payer, amount, id } = body;
 
-    const newExpense = await prisma.expense.create({
-      data: { 
-        tienSan: Number(tienSan), 
-        soCau: Number(soCau), 
-        giaCau: Number(giaCau), 
-        soNguoi: Number(soNguoi), 
-        tongTien: Number(tongTien), 
-        chiaDeu: Number(chiaDeu) 
-      },
-    });
+    if (action === "add") {
+      const newExp = await prisma.expense.create({
+        data: { name, payer, amount: Number(amount) }
+      });
+      return NextResponse.json({ success: true, expense: newExp });
+    }
 
-    return NextResponse.json({ success: true, expense: newExpense });
+    if (action === "delete") {
+      await prisma.expense.delete({ where: { id: Number(id) } });
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ success: false, error: "Action không hợp lệ" }, { status: 400 });
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Lỗi hệ thống" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Lỗi xử lý thu chi" }, { status: 500 });
   }
 }
