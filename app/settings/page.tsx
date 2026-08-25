@@ -34,6 +34,23 @@ export default function SettingsPage() {
     if (!newPlayer.trim()) return;
     const name = newPlayer.trim();
     if (players.some(p => p.name === name)) return alert("Tên đã tồn tại!");
+    const deleteAllPlayers = async () => {
+    if (!confirm("⚠️ Bạn có chắc chắn muốn XOÁ TOÀN BỘ thành viên không?")) return;
+    
+    try {
+      const res = await fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'deleteAll' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPlayers([]); // Xóa sạch danh sách trên màn hình ngay lập tức
+      }
+    } catch (error) {
+      console.error("Lỗi khi xoá toàn bộ:", error);
+    }
+  };
 
     const res = await fetch('/api/players', {
       method: 'POST',
@@ -92,7 +109,21 @@ export default function SettingsPage() {
             placeholder="Nhập tên thành viên mới..." 
             style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#333', color: 'white', fontSize: '1rem' }} 
           />
-          <button onClick={handleAddPlayer} style={{ padding: '12px 20px', backgroundColor: '#2ed573', color: 'black', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Thêm</button>
+          <button onClick={handleAddPlayer} style={{ padding: '12px 20px', backgroundColor: '#2ed573', color: 'black', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Thêm</button><div className="flex gap-2 mb-4">
+  <input 
+    type="text" 
+    placeholder="Nhập tên thành viên mới..." 
+    // ... các code cũ của fen giữ nguyên
+  />
+  <button onClick={addPlayer} className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold">
+    + Thêm
+  </button>
+  
+  {/* NÚT XOÁ HẾT MỚI THÊM VÀO ĐÂY */}
+  <button onClick={deleteAllPlayers} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold transition-colors">
+    🗑️ Xoá hết
+  </button>
+</div>
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
