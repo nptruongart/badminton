@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 // Cấu hình Viewport (Theme color cho PWA)
 export const viewport: Viewport = {
-  themeColor: "#1890ff",
+  themeColor: "#111111",
 };
 
 const geistSans = Geist({
@@ -33,17 +33,20 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} h-full antialiased min-h-full flex flex-col bg-[#111111]`}>
         
-        {/* Phần nội dung chính của App sẽ co giãn đẩy Footer xuống đáy */}
-        <div className="flex-1">
+        {/* Phần nội dung chính */}
+        <div className="flex-1 pb-4">
           {children}
         </div>
 
-        {/* ĐÓNG DẤU BẢN QUYỀN TÁC GIẢ Ở ĐÁY MÀN HÌNH */}
-        <footer className="w-full text-center py-4 mt-auto border-t border-gray-800 bg-[#111111]">
-          <p className="text-gray-400 text-sm">
-            Developed by <span className="text-green-500 font-bold uppercase tracking-wider">Nguyễn Phương Trường</span>
+        {/* ĐÓNG DẤU BẢN QUYỀN - Đã thêm pb-32 để đẩy chữ lên cao không bị nút đè */}
+        <footer className="w-full text-center pt-8 pb-32 mt-auto bg-[#111111]">
+          <p className="text-gray-500 text-[11px] uppercase tracking-[0.2em] mb-1">
+            Developed by
           </p>
-          <p className="text-gray-600 text-xs mt-1">
+          <p className="text-green-500 font-black text-sm uppercase tracking-widest drop-shadow-md">
+            Nguyễn Phương Trường
+          </p>
+          <p className="text-gray-700 text-[10px] mt-2">
             © 2026 iDean. All rights reserved.
           </p>
         </footer>
