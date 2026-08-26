@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 export default function Home() {
@@ -13,12 +13,27 @@ export default function Home() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isTvMode, setIsTvMode] = useState(false);
   const [maxScore, setMaxScore] = useState(21);
+  const [isListening, setIsListening] = useState(false); // Trạng thái Mic
+  const [showPosterBtn, setShowPosterBtn] = useState(false); // Nút chụp Poster
+
+  // Dùng Ref để AI Voice lấy được điểm số mới nhất mà không bị kẹt (Stale State)
+  const score1Ref = useRef(0);
+  const score2Ref = useRef(0);
+  useEffect(() => { score1Ref.current = score1; }, [score1]);
+  useEffect(() => { score2Ref.current = score2; }, [score2]);
 
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
-    script.async = true;
-    document.body.appendChild(script);
+    // 1. Tải thư viện Pháo Hoa
+    const scriptConfetti = document.createElement("script");
+    scriptConfetti.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
+    scriptConfetti.async = true;
+    document.body.appendChild(scriptConfetti);
+
+    // 2. Tải thư viện Chụp Ảnh Poster (html2canvas)
+    const scriptCanvas = document.createElement("script");
+    scriptCanvas.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+    scriptCanvas.async = true;
+    document.body.appendChild(scriptCanvas);
 
     const saved = localStorage.getItem("cyber_match_state");
     const config = JSON.parse(localStorage.getItem("cyber_config") || '{"maxScore": 21}');
@@ -31,15 +46,12 @@ export default function Home() {
     if (t1 || t2) {
       setTeam1Name(t1 ? decodeURIComponent(t1) : "ĐỘI 1");
       setTeam2Name(t2 ? decodeURIComponent(t2) : "ĐỘI 2");
-      setScore1(0);
-      setScore2(0);
+      setScore1(0); setScore2(0);
       window.history.replaceState(null, '', '/'); 
     } else if (saved) {
       const data = JSON.parse(saved);
-      setScore1(data.score1 || 0);
-      setScore2(data.score2 || 0);
-      setTeam1Name(data.team1Name || "ĐỘI 1");
-      setTeam2Name(data.team2Name || "ĐỘI 2");
+      setScore1(data.score1 || 0); setScore2(data.score2 || 0);
+      setTeam1Name(data.team1Name || "ĐỘI 1"); setTeam2Name(data.team2Name || "ĐỘI 2");
     }
     setIsLoaded(true);
   }, []);
@@ -47,22 +59,20 @@ export default function Home() {
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem("cyber_match_state", JSON.stringify({ team1Name, team2Name, score1, score2 }));
+      if (score1 >= maxScore || score2 >= maxScore) setShowPosterBtn(true);
+      else setShowPosterBtn(false);
     }
-  }, [score1, score2, team1Name, team2Name, isLoaded]);
+  }, [score1, score2, team1Name, team2Name, isLoaded, maxScore]);
 
   const vibrate = (ms: number | number[] = 50) => {
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(ms);
-    }
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(ms);
   };
 
-  const playSfx = (type: 'ting' | 'save' | 'reset' | 'win') => {
+  const playSfx = (type: 'ting' | 'save' | 'reset' | 'win' | 'mic') => {
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-
       if (type === 'ting') {
         osc.frequency.setValueAtTime(800, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.08);
@@ -76,17 +86,19 @@ export default function Home() {
         gain.gain.setValueAtTime(0.2, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
         osc.start(); osc.stop(ctx.currentTime + 1.5);
+      } else if (type === 'mic') {
+        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        osc.start(); osc.stop(ctx.currentTime + 0.1);
       }
     } catch (e) {}
   };
 
   const triggerWin = (winnerTeam: string) => {
-    playSfx('win');
-    vibrate([100, 50, 100, 50, 300]); 
-    
+    playSfx('win'); vibrate([100, 50, 100, 50, 300]); 
     if ((window as any).confetti) {
-      const duration = 3000;
-      const end = Date.now() + duration;
+      const end = Date.now() + 3000;
       const frame = () => {
         (window as any).confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ff003c', '#00f3ff'] });
         (window as any).confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff003c', '#00f3ff'] });
@@ -94,12 +106,10 @@ export default function Home() {
       };
       frame();
     }
-
     if (voiceEnabled && typeof window !== "undefined" && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(`Trận đấu kết thúc! Phần thắng thuộc về ${winnerTeam}`);
-      utterance.lang = 'vi-VN';
-      utterance.rate = 1.0;
+      utterance.lang = 'vi-VN'; utterance.rate = 1.0;
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -107,9 +117,7 @@ export default function Home() {
   const speakScore = (s1: number, s2: number, scorer: 1 | 2) => {
     if (!voiceEnabled || typeof window === "undefined" || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    
     if (s1 >= maxScore || s2 >= maxScore) return;
-
     const text = scorer === 1 ? `${team1Name} ${s1}, ${team2Name} ${s2}` : `${team2Name} ${s2}, ${team1Name} ${s1}`;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'vi-VN'; utterance.rate = 1.1;
@@ -119,41 +127,122 @@ export default function Home() {
   const handleScore1Change = (newS1: number) => {
     vibrate(50); playSfx('ting'); setScore1(newS1);
     if (newS1 >= maxScore && score1 < maxScore) triggerWin(team1Name);
-    else speakScore(newS1, score2, 1);
+    else speakScore(newS1, score2Ref.current, 1);
   };
 
   const handleScore2Change = (newS2: number) => {
     vibrate(50); playSfx('ting'); setScore2(newS2);
     if (newS2 >= maxScore && score2 < maxScore) triggerWin(team2Name);
-    else speakScore(score1, newS2, 2);
+    else speakScore(score1Ref.current, newS2, 2);
   };
 
-  const resetScores = () => {
-    if (confirm("Reset trận đấu này?")) { setScore1(0); setScore2(0); }
+  // 🎙️ HÀM AI NGHE LỆNH GIỌNG NÓI
+  const toggleMic = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Trình duyệt không hỗ trợ nhận diện giọng nói! (Khuyên dùng Chrome/Safari)");
+    
+    if (isListening) {
+      if ((window as any).recognition) (window as any).recognition.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'vi-VN';
+    recognition.continuous = true;
+    
+    recognition.onstart = () => { setIsListening(true); playSfx('mic'); vibrate(50); };
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+      console.log("AI Nghe được: ", transcript);
+      
+      if (transcript.includes("đội 1") || transcript.includes("đội một") || transcript.includes("cộng 1") || transcript.includes("bên trái")) {
+        handleScore1Change(score1Ref.current + 1);
+      } else if (transcript.includes("đội 2") || transcript.includes("đội hai") || transcript.includes("cộng 2") || transcript.includes("bên phải")) {
+        handleScore2Change(score2Ref.current + 1);
+      }
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    
+    recognition.start();
+    (window as any).recognition = recognition;
+  };
+
+  // 📸 HÀM CHỤP POSTER ESPORTS
+  const capturePoster = () => {
+    const el = document.getElementById("scoreboard-zone");
+    if (!el || !(window as any).html2canvas) return alert("Lỗi tải thư viện ảnh. Vui lòng tải lại trang!");
+    
+    playSfx('ting');
+    (window as any).html2canvas(el, { backgroundColor: "#050505", scale: 2 }).then((canvas: any) => {
+      const link = document.createElement("a");
+      link.download = `CyberMatch_${team1Name}_vs_${team2Name}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    });
+  };
+
+  const resetScores = () => { if (confirm("Reset trận đấu này?")) { setScore1(0); setScore2(0); } };
+
+  const saveMatch = () => {
+    if (score1 === 0 && score2 === 0) return alert("WARNING: Trận chưa có điểm!");
+    
+    const history = JSON.parse(localStorage.getItem("cyber_match_history") || "[]");
+    history.unshift({ id: Date.now(), team1: team1Name, team2: team2Name, score1, score2, createdAt: new Date().toISOString() });
+    localStorage.setItem("cyber_match_history", JSON.stringify(history));
+
+    let players = JSON.parse(localStorage.getItem("cyber_players") || "[]");
+    const isT1Win = score1 > score2; const isT2Win = score2 > score1; const isDraw = score1 === score2;
+    const t1Names = team1Name.split(" & ").map(n => n.trim());
+    const t2Names = team2Name.split(" & ").map(n => n.trim());
+
+    // 🔥 CẬP NHẬT CHUỖI THẮNG (WINSTREAK)
+    players = players.map((p: any) => {
+      if (t1Names.includes(p.name)) {
+        let eloChange = isDraw ? 0 : (isT1Win ? 10 : -5);
+        let newStreak = isT1Win ? (p.winstreak || 0) + 1 : (isDraw ? (p.winstreak || 0) : 0);
+        return { ...p, wins: isT1Win ? p.wins + 1 : p.wins, losses: (!isT1Win && !isDraw) ? p.losses + 1 : p.losses, elo: (p.elo || 1000) + eloChange, winstreak: newStreak };
+      }
+      if (t2Names.includes(p.name)) {
+        let eloChange = isDraw ? 0 : (isT2Win ? 10 : -5);
+        let newStreak = isT2Win ? (p.winstreak || 0) + 1 : (isDraw ? (p.winstreak || 0) : 0);
+        return { ...p, wins: isT2Win ? p.wins + 1 : p.wins, losses: (!isT2Win && !isDraw) ? p.losses + 1 : p.losses, elo: (p.elo || 1000) + eloChange, winstreak: newStreak };
+      }
+      return p;
+    });
+    localStorage.setItem("cyber_players", JSON.stringify(players));
+    
+    alert(`✅ LƯU THÀNH CÔNG!\nĐã cập nhật hệ số Elo và Chuỗi thắng.`);
+    setScore1(0); setScore2(0);
   };
 
   if (!isLoaded) return <div className="min-h-screen bg-[#050505]"></div>;
 
   return (
-    // Đã thêm overflow-hidden cho TV Mode để cấm tuyệt đối cuộn trang
     <div className={`min-h-[100dvh] w-full bg-[#050505] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#050505] to-[#000000] flex flex-col items-center justify-center select-none font-sans uppercase ${isTvMode ? 'p-0 overflow-hidden' : 'p-2 md:p-4 pb-12 overflow-y-auto'}`}>
       
-      {/* 📺 NÚT THOÁT TV ĐÃ CHUYỂN RA GIỮA VÀ LÀM MỜ */}
       {isTvMode && (
-        <button 
-          onClick={() => setIsTvMode(false)} 
-          className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-black/50 hover:bg-[#ff003c] text-white px-6 py-2 rounded-full font-black border border-gray-600 hover:border-[#ff003c] transition-all backdrop-blur-md opacity-30 hover:opacity-100 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
-        >
+        <button onClick={() => setIsTvMode(false)} className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-black/50 hover:bg-[#ff003c] text-white px-6 py-2 rounded-full font-black border border-gray-600 hover:border-[#ff003c] transition-all backdrop-blur-md opacity-30 hover:opacity-100 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
           ❌ THOÁT TV
         </button>
       )}
 
-      <div className={`flex flex-col items-center justify-center w-full ${isTvMode ? 'h-[100dvh] max-w-none' : 'max-w-md landscape:max-w-4xl gap-4 landscape:gap-3 my-auto pt-6'}`}>
+      {/* KHU VỰC ĐỂ CHỤP POSTER ESPORTS */}
+      <div id="scoreboard-zone" className={`flex flex-col items-center justify-center w-full ${isTvMode ? 'h-[100dvh] max-w-none' : 'max-w-md landscape:max-w-4xl gap-4 landscape:gap-3 my-auto pt-6'}`}>
         
         {!isTvMode && (
           <div className="w-full flex justify-between items-center px-2 mb-2">
-            <h1 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00f3ff] to-[#ff003c] tracking-[0.2em]">CYBER BADMINTON</h1>
-            <div className="flex gap-2">
+            <h1 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00f3ff] to-[#ff003c] tracking-[0.2em] relative">
+              CYBER BADMINTON
+              {isListening && <span className="absolute -top-2 -right-4 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>}
+            </h1>
+            <div className="flex flex-wrap gap-2 justify-end">
+              {/* 🎙️ NÚT KÍCH HOẠT VOICE COMMAND */}
+              <button onClick={toggleMic} className={`px-3 py-1 rounded text-xs font-black tracking-widest border transition-all touch-manipulation flex items-center gap-1 ${isListening ? 'bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse' : 'bg-black border-gray-700 text-gray-500'}`}>
+                🎙️ {isListening ? "ĐANG NGHE" : "MIC"}
+              </button>
+              
               <button onClick={() => setIsTvMode(true)} className="bg-[#b537f2] text-white px-3 py-1 rounded text-xs font-black tracking-widest shadow-[0_0_8px_rgba(181,55,242,0.3)] touch-manipulation">
                 📺 TV MODE
               </button>
@@ -165,20 +254,9 @@ export default function Home() {
         )}
 
         <div className={`flex flex-row w-full relative z-10 ${isTvMode ? 'h-full gap-0' : 'gap-3 landscape:gap-6'}`}>
-          {/* ĐỘI 1 */}
           <div className={`flex-1 flex flex-col items-center bg-[#0d0d0d] relative overflow-hidden ${isTvMode ? 'border-r-4 border-[#ff003c]' : 'border border-[#ff003c] rounded-xl p-2 sm:p-3 justify-center'}`}>
-            <input 
-              type="text" 
-              value={team1Name} 
-              onChange={(e) => setTeam1Name(e.target.value)} 
-              // Đã fix lỗi Input to quá đè ra ngoài (text-[min(6vw,6vh)])
-              className={`w-full bg-transparent text-[#ff003c] font-black tracking-widest text-center focus:outline-none focus:bg-[#ff003c20] transition-all border-b border-transparent focus:border-[#ff003c] ${isTvMode ? 'text-[min(6vw,6vh)] pt-10 pb-4' : 'text-base sm:text-xl landscape:text-2xl h-10 rounded'}`} 
-            />
-            <div 
-              // Đã fix tỷ số tràn viền bằng text-[min(45vw,70vh)]
-              className={`leading-none font-black text-[#ff003c] cursor-pointer active:scale-[0.95] transition-transform w-full touch-manipulation flex items-center justify-center ${isTvMode ? 'flex-1 text-[min(45vw,70vh)] pb-16' : 'flex-1 text-[110px] sm:text-[130px] landscape:text-[100px] my-4 landscape:my-1'}`} 
-              onClick={() => handleScore1Change(score1 + 1)}
-            >
+            <input type="text" value={team1Name} onChange={(e) => setTeam1Name(e.target.value)} className={`w-full bg-transparent text-[#ff003c] font-black tracking-widest text-center focus:outline-none focus:bg-[#ff003c20] transition-all border-b border-transparent focus:border-[#ff003c] ${isTvMode ? 'text-[min(6vw,6vh)] pt-10 pb-4' : 'text-base sm:text-xl landscape:text-2xl h-10 rounded'}`} />
+            <div className={`leading-none font-black text-[#ff003c] cursor-pointer active:scale-[0.95] transition-transform w-full touch-manipulation flex items-center justify-center ${isTvMode ? 'flex-1 text-[min(45vw,70vh)] pb-16' : 'flex-1 text-[110px] sm:text-[130px] landscape:text-[100px] my-4 landscape:my-1'}`} onClick={() => handleScore1Change(score1 + 1)}>
               {score1}
             </div>
             {!isTvMode && (
@@ -186,18 +264,9 @@ export default function Home() {
             )}
           </div>
 
-          {/* ĐỘI 2 */}
           <div className={`flex-1 flex flex-col items-center bg-[#0d0d0d] relative overflow-hidden ${isTvMode ? '' : 'border border-[#00f3ff] rounded-xl p-2 sm:p-3 justify-center'}`}>
-            <input 
-              type="text" 
-              value={team2Name} 
-              onChange={(e) => setTeam2Name(e.target.value)} 
-              className={`w-full bg-transparent text-[#00f3ff] font-black tracking-widest text-center focus:outline-none focus:bg-[#00f3ff20] transition-all border-b border-transparent focus:border-[#00f3ff] ${isTvMode ? 'text-[min(6vw,6vh)] pt-10 pb-4' : 'text-base sm:text-xl landscape:text-2xl h-10 rounded'}`} 
-            />
-            <div 
-              className={`leading-none font-black text-[#00f3ff] cursor-pointer active:scale-[0.95] transition-transform w-full touch-manipulation flex items-center justify-center ${isTvMode ? 'flex-1 text-[min(45vw,70vh)] pb-16' : 'flex-1 text-[110px] sm:text-[130px] landscape:text-[100px] my-4 landscape:my-1'}`} 
-              onClick={() => handleScore2Change(score2 + 1)}
-            >
+            <input type="text" value={team2Name} onChange={(e) => setTeam2Name(e.target.value)} className={`w-full bg-transparent text-[#00f3ff] font-black tracking-widest text-center focus:outline-none focus:bg-[#00f3ff20] transition-all border-b border-transparent focus:border-[#00f3ff] ${isTvMode ? 'text-[min(6vw,6vh)] pt-10 pb-4' : 'text-base sm:text-xl landscape:text-2xl h-10 rounded'}`} />
+            <div className={`leading-none font-black text-[#00f3ff] cursor-pointer active:scale-[0.95] transition-transform w-full touch-manipulation flex items-center justify-center ${isTvMode ? 'flex-1 text-[min(45vw,70vh)] pb-16' : 'flex-1 text-[110px] sm:text-[130px] landscape:text-[100px] my-4 landscape:my-1'}`} onClick={() => handleScore2Change(score2 + 1)}>
               {score2}
             </div>
             {!isTvMode && (
@@ -205,27 +274,35 @@ export default function Home() {
             )}
           </div>
         </div>
-
-        {!isTvMode && (
-          <div className="flex flex-col w-full gap-3 landscape:gap-3 relative z-50 pb-6 mt-2">
-            <div className="flex flex-col landscape:flex-row gap-3">
-              <Link href="/matchmaking" onClick={() => vibrate(30)} className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] font-black py-4 rounded flex justify-center items-center text-lg touch-manipulation">⚡ RẢI KÈO</Link>
-              <button onClick={() => alert("Lưu thành công!")} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] font-black py-4 rounded flex justify-center items-center text-lg touch-manipulation">💾 LƯU TRẬN</button>
-            </div>
-            <div className="flex flex-col landscape:flex-row gap-3">
-              <div className="flex flex-row flex-1 gap-3">
-                <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation">🔄 RESET</button>
-                <Link href="/analytics" onClick={() => vibrate(30)} className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation">THỐNG KÊ 📈</Link>
-              </div>
-              <div className="flex flex-row flex-1 gap-3">
-                <Link href="/history" onClick={() => vibrate(30)} className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation">LỊCH SỬ 📊</Link>
-                <Link href="/finance" onClick={() => vibrate(30)} className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation">💰 TÀI CHÍNH</Link>
-              </div>
-            </div>
-            <Link href="/settings" onClick={() => vibrate(30)} className="w-full bg-[#0d0d0d] border border-gray-400 text-gray-400 font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation mt-1">SYSTEM ⚙️</Link>
-          </div>
-        )}
       </div>
+
+      {!isTvMode && (
+        <div className="flex flex-col w-full max-w-md landscape:max-w-4xl gap-3 landscape:gap-3 relative z-50 pb-6 mt-4">
+          
+          {/* 📸 NÚT CHỤP POSTER CHỈ HIỆN KHI CÓ ĐỘI CHẠM MỐC */}
+          {showPosterBtn && (
+             <button onClick={capturePoster} className="w-full bg-gradient-to-r from-[#ff003c] to-[#00f3ff] text-white font-black py-4 rounded-xl flex justify-center items-center text-lg tracking-[0.2em] shadow-[0_0_20px_rgba(255,255,255,0.4)] animate-pulse">
+               📸 LƯU POSTER KẾT QUẢ 📸
+             </button>
+          )}
+
+          <div className="flex flex-col landscape:flex-row gap-3">
+            <Link href="/matchmaking" onClick={() => vibrate(30)} className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] font-black py-4 rounded flex justify-center items-center text-lg touch-manipulation">⚡ RẢI KÈO</Link>
+            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] font-black py-4 rounded flex justify-center items-center text-lg touch-manipulation">💾 LƯU TRẬN</button>
+          </div>
+          <div className="flex flex-col landscape:flex-row gap-3">
+            <div className="flex flex-row flex-1 gap-3">
+              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation">🔄 RESET</button>
+              <Link href="/analytics" onClick={() => vibrate(30)} className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation">THỐNG KÊ 📈</Link>
+            </div>
+            <div className="flex flex-row flex-1 gap-3">
+              <Link href="/history" onClick={() => vibrate(30)} className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation">LỊCH SỬ 📊</Link>
+              <Link href="/finance" onClick={() => vibrate(30)} className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation">💰 TÀI CHÍNH</Link>
+            </div>
+          </div>
+          <Link href="/settings" onClick={() => vibrate(30)} className="w-full bg-[#0d0d0d] border border-gray-400 text-gray-400 font-black py-3 rounded flex justify-center items-center text-sm touch-manipulation mt-1">SYSTEM ⚙️</Link>
+        </div>
+      )}
     </div>
   );
 }
