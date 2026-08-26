@@ -3,197 +3,161 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-export default function SettingsPage() {
-  const [players, setPlayers] = useState<{ id: number; name: string }[]>([]);
-  const [newPlayerName, setNewPlayerName] = useState("");
-  const [maxScore, setMaxScore] = useState(21);
-  const [shuttlePrice, setShuttlePrice] = useState(15000);
+export default function Home() {
+  const [score1, setScore1] = useState(0);
+  const [score2, setScore2] = useState(0);
+  const [team1Name, setTeam1Name] = useState("ĐỘI 1");
+  const [team2Name, setTeam2Name] = useState("ĐỘI 2");
+  const [isMounted, setIsMounted] = useState(false);
 
+  // Khôi phục dữ liệu từ LocalStorage hoặc nhận từ trang Ghép Kèo
   useEffect(() => {
-    fetchPlayers();
+    setIsMounted(true);
+    const saved = localStorage.getItem("cyber_match_state");
+    if (saved) {
+      const data = JSON.parse(saved);
+      setScore1(data.score1 || 0);
+      setScore2(data.score2 || 0);
+      setTeam1Name(data.team1Name || "ĐỘI 1");
+      setTeam2Name(data.team2Name || "ĐỘI 2");
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const t1 = params.get("t1");
+    const t2 = params.get("t2");
+    if (t1 || t2) {
+      setTeam1Name(t1 ? decodeURIComponent(t1) : "ĐỘI 1");
+      setTeam2Name(t2 ? decodeURIComponent(t2) : "ĐỘI 2");
+      setScore1(0);
+      setScore2(0);
+      window.history.replaceState(null, '', '/'); // Xóa URL cho sạch
+    }
   }, []);
 
-  const fetchPlayers = async () => {
-    try {
-      const res = await fetch("/api/players");
-      const data = await res.json();
-      if (data.success) {
-        setPlayers(data.players);
-      }
-    } catch (error) {
-      console.error("Lỗi lấy danh sách thành viên:", error);
+  // Tự động lưu điểm mỗi khi có thay đổi (chống mất điểm)
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem("cyber_match_state", JSON.stringify({ team1Name, team2Name, score1, score2 }));
+    }
+  }, [score1, score2, team1Name, team2Name, isMounted]);
+
+  const resetScores = () => {
+    if (confirm("Reset trận đấu này?")) {
+      setScore1(0);
+      setScore2(0);
     }
   };
 
-  const addPlayer = async () => {
-    if (!newPlayerName.trim()) return;
-    try {
-      const res = await fetch("/api/players", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "add", name: newPlayerName.trim() }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setNewPlayerName("");
-        fetchPlayers();
-      }
-    } catch (error) {
-      console.error("Lỗi thêm thành viên:", error);
-    }
+  const saveMatch = () => {
+    if (score1 === 0 && score2 === 0) return alert("WARNING: Trận đấu chưa có điểm!");
+    
+    // Lưu thẳng vào LocalStorage cực nhanh
+    const history = JSON.parse(localStorage.getItem("cyber_match_history") || "[]");
+    history.unshift({
+      id: Date.now(),
+      team1: team1Name,
+      team2: team2Name,
+      score1,
+      score2,
+      createdAt: new Date().toISOString()
+    });
+    localStorage.setItem("cyber_match_history", JSON.stringify(history));
+    
+    alert(`✅ DATA SAVED OFFLINE!\n\n${team1Name} (${score1}) - ${team2Name} (${score2})`);
+    setScore1(0);
+    setScore2(0);
   };
 
-  const deletePlayer = async (id: number) => {
-    if (!confirm("⚠️ WARNING: Xóa tay vợt này khỏi Database?")) return;
-    try {
-      const res = await fetch("/api/players", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", id }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchPlayers();
-      }
-    } catch (error) {
-      console.error("Lỗi xoá thành viên:", error);
-    }
-  };
-
-  const deleteAllPlayers = async () => {
-    if (!confirm("🔥 DANGER: CẢNH BÁO ĐỎ! Bạn có chắc chắn muốn XOÁ TOÀN BỘ DATA thành viên không? Hành động này không thể hoàn tác!")) return;
-    try {
-      const res = await fetch("/api/players", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "deleteAll" }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setPlayers([]); 
-      }
-    } catch (error) {
-      console.error("Lỗi khi xoá toàn bộ:", error);
-    }
-  };
-
-  const saveConfig = () => {
-    alert("✅ SYSTEM: ĐÃ LƯU CẤU HÌNH HỆ THỐNG!");
-  };
+  if (!isMounted) return <div className="min-h-screen bg-[#050505]"></div>;
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#050505] to-[#000000] text-white p-4 font-sans uppercase pb-20">
-      
-      {/* HEADER */}
-      <div className="max-w-3xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 mt-4 border-b border-gray-600 pb-4 shadow-[0_4px_15px_-5px_rgba(255,255,255,0.1)] gap-4">
-        <h1 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-300 to-white tracking-widest drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">
-          SYSTEM CONFIG ⚙️
-        </h1>
-        <div className="flex gap-2">
-          <Link href="/finance" className="bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] hover:bg-[#fcee0a] hover:text-black px-4 py-2 rounded font-black transition-all shadow-[0_0_10px_rgba(252,238,10,0.2)] tracking-widest text-xs sm:text-sm">
-            💰 TÀI CHÍNH
-          </Link>
-          <Link href="/" className="relative group bg-[#0d0d0d] border border-gray-500 hover:border-white text-gray-400 hover:text-white px-4 py-2 rounded font-black transition-all shadow-none hover:shadow-[0_0_10px_rgba(255,255,255,0.4)] tracking-widest text-xs sm:text-sm">
-            <span className="absolute left-0 top-0 w-1 h-full bg-gray-500 group-hover:bg-white transition-all"></span>
-            HOME
-          </Link>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#050505] to-[#000000] flex flex-col items-center justify-center p-2 md:p-4 select-none font-sans uppercase overflow-hidden">
+      <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00f3ff] to-[#ff003c] tracking-[0.2em] mb-4 landscape:mb-2 text-center">
+        CYBER BADMINTON
+      </h1>
 
-      <div className="max-w-3xl mx-auto space-y-6">
-        
-        {/* BOX QUẢN LÝ THÀNH VIÊN - NEON CYAN */}
-        <div className="bg-[#0d0d0d] p-5 md:p-6 rounded border border-[#00f3ff]/30 shadow-[0_0_15px_rgba(0,243,255,0.1)] relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#00f3ff]/10 to-transparent"></div>
+      <div className="flex flex-col items-center justify-center w-full max-w-md landscape:max-w-4xl gap-4 landscape:gap-3">
+        <div className="flex flex-row w-full gap-3 landscape:gap-6">
           
-          <h2 className="text-[#00f3ff] font-black tracking-widest mb-6 border-b border-[#00f3ff]/20 pb-2 flex items-center gap-2 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]">
-            <span className="w-2 h-2 bg-[#00f3ff] rounded-full animate-pulse"></span>
-            DATABASE THÀNH VIÊN
-          </h2>
-          
-          <div className="flex flex-col sm:flex-row gap-3 mb-6 relative z-10">
+          {/* ĐỘI 1 */}
+          <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#ff003c] rounded-xl p-2 sm:p-3 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#ff003c] to-transparent opacity-50"></div>
             <input
               type="text"
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
-              placeholder="NHẬP TÊN TAY VỢT MỚI..."
-              className="flex-1 bg-black text-[#00f3ff] border border-gray-700 rounded px-4 py-3 focus:outline-none focus:border-[#00f3ff] focus:shadow-[0_0_10px_rgba(0,243,255,0.2)] transition-all font-black tracking-wider placeholder-gray-700"
+              value={team1Name}
+              onChange={(e) => setTeam1Name(e.target.value)}
+              className="w-full bg-transparent text-[#ff003c] text-base sm:text-xl landscape:text-2xl font-black tracking-widest text-center h-10 focus:outline-none focus:bg-[#ff003c20] rounded transition-all border-b border-transparent focus:border-[#ff003c]"
             />
-            <div className="flex gap-2">
-              <button
-                onClick={addPlayer}
-                className="bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black font-black px-6 py-3 rounded transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)] tracking-widest"
-              >
-                + ADD
-              </button>
-              <button
-                onClick={deleteAllPlayers}
-                className="bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] hover:bg-[#ff003c] hover:text-black font-black px-4 py-3 rounded transition-all shadow-[0_0_10px_rgba(255,0,60,0.2)] tracking-widest whitespace-nowrap"
-              >
-                🔥 PURGE ALL
-              </button>
+            {/* Gỡ bỏ drop-shadow, dùng active:scale-90 duration-75 để bấm giật cực mượt trên iPhone */}
+            <div 
+              className="text-[110px] sm:text-[130px] landscape:text-[100px] leading-none font-black text-[#ff003c] my-4 landscape:my-1 cursor-pointer active:scale-[0.85] transition-transform duration-75 touch-manipulation"
+              onClick={() => setScore1(s => s + 1)}
+            >
+              {score1}
             </div>
+            <button 
+              onClick={() => setScore1(s => Math.max(0, s - 1))}
+              className="w-full bg-[#1a0006] active:bg-[#ff003c] active:text-black border border-[#ff003c] text-[#ff003c] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm touch-manipulation"
+            >
+              Trừ 1
+            </button>
           </div>
 
-          <div className="flex flex-wrap gap-3 relative z-10">
-            {players.map((player) => (
-              <div key={player.id} className="bg-black border border-[#00f3ff]/40 hover:border-[#00f3ff] rounded px-3 py-1.5 flex items-center gap-2 transition-all shadow-[inset_0_0_5px_rgba(0,243,255,0.1)] group">
-                <span className="font-bold text-gray-300 tracking-wider text-sm">{player.name}</span>
-                <button 
-                  onClick={() => deletePlayer(player.id)}
-                  className="text-gray-600 group-hover:text-[#ff003c] font-black ml-1 text-lg leading-none transition-colors drop-shadow-[0_0_5px_rgba(255,0,60,0)] group-hover:drop-shadow-[0_0_5px_rgba(255,0,60,0.8)]"
-                  title="Xoá tay vợt này"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            {players.length === 0 && (
-              <p className="text-gray-600 font-bold tracking-widest text-sm w-full text-center py-4">SYSTEM EMPTY. NO PLAYERS DETECTED.</p>
-            )}
+          {/* ĐỘI 2 */}
+          <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#00f3ff] rounded-xl p-2 sm:p-3 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00f3ff] to-transparent opacity-50"></div>
+            <input
+              type="text"
+              value={team2Name}
+              onChange={(e) => setTeam2Name(e.target.value)}
+              className="w-full bg-transparent text-[#00f3ff] text-base sm:text-xl landscape:text-2xl font-black tracking-widest text-center h-10 focus:outline-none focus:bg-[#00f3ff20] rounded transition-all border-b border-transparent focus:border-[#00f3ff]"
+            />
+            <div 
+              className="text-[110px] sm:text-[130px] landscape:text-[100px] leading-none font-black text-[#00f3ff] my-4 landscape:my-1 cursor-pointer active:scale-[0.85] transition-transform duration-75 touch-manipulation"
+              onClick={() => setScore2(s => s + 1)}
+            >
+              {score2}
+            </div>
+            <button 
+              onClick={() => setScore2(s => Math.max(0, s - 1))}
+              className="w-full bg-[#001a1a] active:bg-[#00f3ff] active:text-black border border-[#00f3ff] text-[#00f3ff] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm touch-manipulation"
+            >
+              Trừ 1
+            </button>
           </div>
         </div>
 
-        {/* BOX CẤU HÌNH - NEON YELLOW */}
-        <div className="bg-[#0d0d0d] p-5 md:p-6 rounded border border-[#fcee0a]/30 shadow-[0_0_15px_rgba(252,238,10,0.1)] relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#fcee0a]/10 to-transparent"></div>
-
-          <h2 className="text-[#fcee0a] font-black tracking-widest mb-6 border-b border-[#fcee0a]/20 pb-2 flex items-center gap-2 drop-shadow-[0_0_5px_rgba(252,238,10,0.5)]">
-            <span className="w-2 h-2 bg-[#fcee0a] rounded-full animate-pulse"></span>
-            THÔNG SỐ MẶC ĐỊNH
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 relative z-10">
-            <div>
-              <label className="block text-gray-400 text-xs font-black tracking-widest mb-2">🏁 ĐIỂM SỐ TỐI ĐA TRẬN ĐẤU</label>
-              <input
-                type="number"
-                value={maxScore}
-                onChange={(e) => setMaxScore(Number(e.target.value))}
-                className="w-full bg-black text-[#fcee0a] border border-gray-700 rounded px-4 py-3 focus:outline-none focus:border-[#fcee0a] focus:shadow-[0_0_10px_rgba(252,238,10,0.2)] transition-all font-black tracking-wider text-xl"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-400 text-xs font-black tracking-widest mb-2">🏸 GIÁ TIỀN 1 QUẢ CẦU (VNĐ)</label>
-              <input
-                type="number"
-                value={shuttlePrice}
-                onChange={(e) => setShuttlePrice(Number(e.target.value))}
-                className="w-full bg-black text-[#39ff14] border border-gray-700 rounded px-4 py-3 focus:outline-none focus:border-[#39ff14] focus:shadow-[0_0_10px_rgba(57,255,20,0.2)] transition-all font-black tracking-wider text-xl"
-              />
-            </div>
+        {/* NÚT BẤM (Thêm active style cho UX rõ ràng) */}
+        <div className="flex flex-col w-full gap-3 landscape:gap-3">
+          <div className="flex flex-col landscape:flex-row gap-3">
+            <Link href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center items-center gap-2 text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
+              ⚡ RẢI KÈO
+            </Link>
+            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:bg-[#39ff14] active:text-black font-black py-4 landscape:py-3 rounded flex justify-center items-center gap-2 text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
+              💾 LƯU TRẬN
+            </button>
           </div>
 
-          <button 
-            onClick={saveConfig}
-            className="relative group w-full bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] hover:bg-[#fcee0a] hover:text-black font-black py-4 rounded flex justify-center items-center gap-2 text-lg transition-all shadow-[0_0_15px_rgba(252,238,10,0.3)] active:scale-95 tracking-widest z-10"
-          >
-            <span className="absolute left-0 top-0 w-2 h-full bg-[#fcee0a]"></span>
-            💾 LƯU CẤU HÌNH HỆ THỐNG
-          </button>
+          <div className="flex flex-col landscape:flex-row gap-3">
+            <div className="flex flex-row flex-1 gap-3">
+              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:bg-[#ff003c] active:text-white font-black py-3 landscape:py-2.5 rounded flex justify-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+                🔄 RESET
+              </button>
+              <Link href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+                LỊCH SỬ 📊
+              </Link>
+            </div>
+            
+            <div className="flex flex-row flex-1 gap-3">
+              <Link href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+                💰 TÀI CHÍNH
+              </Link>
+              <Link href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+                SYSTEM ⚙️
+              </Link>
+            </div>
+          </div>
         </div>
-        
       </div>
     </div>
   );

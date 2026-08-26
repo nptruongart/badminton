@@ -37,15 +37,9 @@ export default function RootLayout({
         </div>
 
         {/* Chữ ký được đặt z-0 và bỏ nền đen để không che mất nút */}
-        <footer className="w-full text-center pt-8 pb-32 mt-auto relative z-0">
-          <p className="text-gray-500 text-[11px] uppercase tracking-[0.2em] mb-1">
-            Developed by
-          </p>
-          <p className="text-green-500 font-black text-sm uppercase tracking-widest drop-shadow-md">
-            Nguyễn Phương Trường
-          </p>
-          <p className="text-gray-700 text-[10px] mt-2">
-            © 2026 iDean. All rights reserved.
+        <footer className="w-full text-center py-3 bg-[#050505]">
+          <p className="text-gray-600 text-[10px] tracking-widest font-mono uppercase">
+            DEVELOPED BY <span className="text-[#00f3ff]">NGUYỄN PHƯƠNG TRƯỜNG</span> © 2026
           </p>
         </footer>
 
