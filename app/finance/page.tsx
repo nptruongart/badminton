@@ -9,6 +9,12 @@ interface Expense {
   payer: string;
 }
 
+interface Transaction {
+  from: string;
+  to: string;
+  amount: number;
+}
+
 export default function FinancePage() {
   const router = useRouter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -53,31 +59,68 @@ export default function FinancePage() {
     }
   };
 
-  // --- THUẬT TOÁN BÙ TRỪ TÀI CHÍNH ---
+  // --- THUẬT TOÁN BÙ TRỪ VÀ TÍNH TOÁN CHUYỂN KHOẢN (SPLITWISE LOGIC) ---
   const totalSpent = expenses.reduce((sum, item) => sum + item.amount, 0);
   const playersCount = Math.max(1, players.length);
   const perPerson = Math.ceil(totalSpent / playersCount);
 
-  // Tính toán số dư cho từng người
+  // 1. Tính toán số dư cho từng người
   const balances: Record<string, number> = {};
   
-  // Gán mức nợ mặc định cho tất cả mọi người (-perPerson)
-  players.forEach(p => {
-    balances[p] = -perPerson;
-  });
+  // Gán mức nợ mặc định
+  players.forEach(p => { balances[p] = -perPerson; });
 
-  // Cộng lại số tiền họ đã ứng trước
+  // Cộng số tiền đã ứng
   expenses.forEach(e => {
-    // Nếu người chi là khách ngoài (không có trong list), thêm họ vào map
     if (balances[e.payer] === undefined) balances[e.payer] = 0;
     balances[e.payer] += e.amount;
   });
+
+  // 2. Thuật toán phân bổ chuyển khoản
+  const transactions: Transaction[] = [];
+  const debtors: { name: string; amount: number }[] = [];
+  const creditors: { name: string; amount: number }[] = [];
+
+  // Tách nhóm Nợ (Cần đóng) và nhóm Dư (Nhận lại)
+  for (const [name, balance] of Object.entries(balances)) {
+    if (balance < -0.5) debtors.push({ name, amount: Math.abs(balance) });
+    else if (balance > 0.5) creditors.push({ name, amount: balance });
+  }
+
+  // Sắp xếp giảm dần để ưu tiên người nợ nhiều trả cho người nhận nhiều (Tối ưu số lần chuyển)
+  debtors.sort((a, b) => b.amount - a.amount);
+  creditors.sort((a, b) => b.amount - a.amount);
+
+  let i = 0;
+  let j = 0;
+
+  while (i < debtors.length && j < creditors.length) {
+    const debtor = debtors[i];
+    const creditor = creditors[j];
+    
+    const transferAmount = Math.min(debtor.amount, creditor.amount);
+    
+    if (transferAmount > 0) {
+      transactions.push({
+        from: debtor.name,
+        to: creditor.name,
+        amount: Math.round(transferAmount)
+      });
+    }
+    
+    // Cập nhật lại số tiền sau khi đã bù trừ
+    debtor.amount -= transferAmount;
+    creditor.amount -= transferAmount;
+    
+    // Nếu ai đã thanh toán xong thì nhảy sang người tiếp theo
+    if (debtor.amount < 0.5) i++;
+    if (creditor.amount < 0.5) j++;
+  }
 
   if (!isLoaded) return <div className="min-h-screen bg-[#050505]"></div>;
 
   return (
     <div className="min-h-screen bg-[#050505] text-white p-4 font-sans uppercase pb-10">
-      {/* HEADER */}
       <div className="max-w-xl mx-auto flex justify-between items-center mb-6 border-b border-[#fcee0a] pb-4">
         <h1 className="text-xl font-black text-[#fcee0a] tracking-widest">HỆ THỐNG TÀI CHÍNH</h1>
         <button onClick={() => router.push('/')} className="bg-[#0d0d0d] border border-gray-500 text-gray-400 px-4 py-2 rounded font-bold text-sm touch-manipulation">QUAY LẠI</button>
@@ -97,15 +140,37 @@ export default function FinancePage() {
           </div>
         </div>
 
-        {/* BẢNG QUYẾT TOÁN BÙ TRỪ */}
+        {/* CỤM MỚI: HƯỚNG DẪN CHUYỂN KHOẢN (SPLITWISE) */}
+        {transactions.length > 0 && (
+          <div className="bg-[#0d0d0d] p-5 rounded border border-[#b537f2]/30 shadow-[0_0_15px_rgba(181,55,242,0.15)]">
+            <h2 className="text-[#b537f2] font-black tracking-widest mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-[#b537f2] rounded-full animate-pulse"></span>
+              PHƯƠNG ÁN CHUYỂN TIỀN
+            </h2>
+            <div className="flex flex-col gap-3">
+              {transactions.map((t, idx) => (
+                <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-black p-3 border border-gray-800 rounded gap-2">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-[#ff003c] font-bold text-sm truncate">{t.from}</span>
+                    <span className="text-gray-500 text-xs shrink-0">👉 chuyển cho 👉</span>
+                    <span className="text-[#00f3ff] font-bold text-sm truncate">{t.to}</span>
+                  </div>
+                  <span className="text-[#fcee0a] font-black shrink-0 sm:text-right">{t.amount.toLocaleString()} đ</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* BẢNG QUYẾT TOÁN TỔNG QUÁT (Giữ lại để xem ai lời ai lỗ tổng) */}
         <div className="bg-[#0d0d0d] p-5 rounded border border-[#39ff14]/30 shadow-[0_0_10px_rgba(57,255,20,0.1)]">
-          <h2 className="text-[#39ff14] font-black tracking-widest mb-4">BẢNG BÙ TRỪ QUYẾT TOÁN</h2>
+          <h2 className="text-[#39ff14] font-black tracking-widest mb-4">SỐ DƯ TỔNG QUÁT</h2>
           <div className="flex flex-col gap-2">
             {Object.keys(balances).length === 0 ? (
               <div className="text-gray-600 text-sm font-bold text-center">CHƯA CÓ NGƯỜI CHƠI NÀO</div>
             ) : (
               Object.entries(balances)
-                .sort((a, b) => a[1] - b[1]) // Sắp xếp: Ai nợ nhiều xếp trên, ai nhận lại xếp dưới
+                .sort((a, b) => a[1] - b[1]) 
                 .map(([playerName, balance]) => (
                 <div key={playerName} className="flex justify-between items-center bg-black p-3 border border-gray-800 rounded">
                   <span className="text-gray-300 font-bold text-sm">{playerName}</span>
@@ -140,7 +205,7 @@ export default function FinancePage() {
             </div>
             
             <div className="flex gap-2 items-center">
-              <span className="text-gray-400 font-bold text-xs shrink-0">NGƯỜI TRẢ TIỀN:</span>
+              <span className="text-gray-400 font-bold text-xs shrink-0">NGƯỜI TRẢ:</span>
               <select 
                 value={selectedPayer} onChange={(e) => setSelectedPayer(e.target.value)}
                 className="flex-1 bg-black border border-gray-700 text-[#00f3ff] px-3 py-3 rounded focus:border-[#00f3ff] focus:outline-none font-black text-sm"
