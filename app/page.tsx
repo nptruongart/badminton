@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link"; 
+import Link from "next/link";
 
 export default function Home() {
   const [score1, setScore1] = useState(0);
@@ -9,6 +9,7 @@ export default function Home() {
   const [team1Name, setTeam1Name] = useState("ĐỘI 1");
   const [team2Name, setTeam2Name] = useState("ĐỘI 2");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true); // Bật/tắt giọng đọc
 
   useEffect(() => {
     const saved = localStorage.getItem("cyber_match_state");
@@ -37,6 +38,28 @@ export default function Home() {
       localStorage.setItem("cyber_match_state", JSON.stringify({ team1Name, team2Name, score1, score2 }));
     }
   }, [score1, score2, team1Name, team2Name, isLoaded]);
+
+  // 🤖 HÀM TRỌNG TÀI AI ĐỌC ĐIỂM
+  const speakScore = (s1: number, s2: number) => {
+    if (!voiceEnabled || typeof window === "undefined" || !('speechSynthesis' in window)) return;
+    
+    window.speechSynthesis.cancel(); // Hủy các câu đọc cũ đang xếp hàng để đọc ngay lập tức
+    const text = `${team1Name} ${s1}, ${team2Name} ${s2}`;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'vi-VN'; // Giọng tiếng Việt
+    utterance.rate = 1.1; // Đọc nhanh gọn lẹ, dứt khoát
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleScore1Change = (newS1: number) => {
+    setScore1(newS1);
+    speakScore(newS1, score2);
+  };
+
+  const handleScore2Change = (newS2: number) => {
+    setScore2(newS2);
+    speakScore(score1, newS2);
+  };
 
   const resetScores = () => {
     if (confirm("Reset trận đấu này?")) {
@@ -100,11 +123,27 @@ export default function Home() {
       
       <div className="flex flex-col items-center justify-center w-full max-w-md landscape:max-w-4xl gap-4 landscape:gap-3 my-auto pt-6">
         
-        <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00f3ff] to-[#ff003c] tracking-[0.2em] mb-2 landscape:mb-0 text-center">
-          CYBER BADMINTON
-        </h1>
+        {/* HEADER CÓ THÊM NÚT BẬT/TẮT ÂM THANH TRỌNG TÀI AI */}
+        <div className="w-full flex justify-between items-center px-2">
+          <h1 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00f3ff] to-[#ff003c] tracking-[0.2em]">
+            CYBER BADMINTON
+          </h1>
+          <button 
+            onClick={() => setVoiceEnabled(!voiceEnabled)}
+            className={`px-3 py-1 rounded text-xs font-black tracking-widest border transition-all touch-manipulation ${
+              voiceEnabled 
+                ? 'bg-[#39ff14]/10 border-[#39ff14] text-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.3)]' 
+                : 'bg-black border-gray-700 text-gray-500'
+            }`}
+          >
+            {voiceEnabled ? "🔊 AI VOICE: ON" : "🔇 AI VOICE: OFF"}
+          </button>
+        </div>
 
+        {/* CỤM BẢNG ĐIỂM */}
         <div className="flex flex-row w-full gap-3 landscape:gap-6 relative z-10">
+          
+          {/* ĐỘI 1 */}
           <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#ff003c] rounded-xl p-2 sm:p-3 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#ff003c] to-transparent opacity-50"></div>
             <input
@@ -115,18 +154,19 @@ export default function Home() {
             />
             <div 
               className="text-[110px] sm:text-[130px] landscape:text-[100px] leading-none font-black text-[#ff003c] my-4 landscape:my-1 cursor-pointer active:scale-[0.85] transition-transform duration-75"
-              onClick={() => setScore1(s => s + 1)}
+              onClick={() => handleScore1Change(score1 + 1)}
             >
               {score1}
             </div>
             <button 
-              onClick={() => setScore1(s => Math.max(0, s - 1))}
-              className="w-full bg-[#1a0006] active:opacity-50 border border-[#ff003c] text-[#ff003c] px-2 py-2 rounded font-bold transition-opacity tracking-wider text-xs sm:text-sm flex items-center justify-center"
+              onClick={() => handleScore1Change(Math.max(0, score1 - 1))}
+              className="w-full bg-[#1a0006] active:opacity-50 border border-[#ff003c] text-[#ff003c] px-2 py-2 rounded font-bold transition-opacity tracking-wider text-xs sm:text-sm flex items-center justify-center touch-manipulation"
             >
               Trừ 1
             </button>
           </div>
 
+          {/* ĐỘI 2 */}
           <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#00f3ff] rounded-xl p-2 sm:p-3 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00f3ff] to-transparent opacity-50"></div>
             <input
@@ -137,45 +177,45 @@ export default function Home() {
             />
             <div 
               className="text-[110px] sm:text-[130px] landscape:text-[100px] leading-none font-black text-[#00f3ff] my-4 landscape:my-1 cursor-pointer active:scale-[0.85] transition-transform duration-75"
-              onClick={() => setScore2(s => s + 1)}
+              onClick={() => handleScore2Change(score2 + 1)}
             >
               {score2}
             </div>
             <button 
-              onClick={() => setScore2(s => Math.max(0, s - 1))}
-              className="w-full bg-[#001a1a] active:opacity-50 border border-[#00f3ff] text-[#00f3ff] px-2 py-2 rounded font-bold transition-opacity tracking-wider text-xs sm:text-sm flex items-center justify-center"
+              onClick={() => handleScore2Change(Math.max(0, score2 - 1))}
+              className="w-full bg-[#001a1a] active:opacity-50 border border-[#00f3ff] text-[#00f3ff] px-2 py-2 rounded font-bold transition-opacity tracking-wider text-xs sm:text-sm flex items-center justify-center touch-manipulation"
             >
               Trừ 1
             </button>
           </div>
         </div>
 
-        {/* 🚀 LỘT SẠCH HIỆU ỨNG ĐỔI MÀU NỀN - CHỈ CÒN ACTIVE:OPACITY-50 (MỜ ĐI) ĐỂ CHỐNG LỖI SAFARI 🚀 */}
+        {/* DÀN NÚT ĐIỀU KHIỂN */}
         <div className="flex flex-col w-full gap-3 landscape:gap-3 relative z-50 pb-6 mt-2">
           <div className="flex flex-col landscape:flex-row gap-3">
-            <Link href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:opacity-50 font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-opacity tracking-widest">
+            <Link href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:opacity-50 font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-opacity tracking-widest touch-manipulation">
               ⚡ RẢI KÈO
             </Link>
-            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:opacity-50 font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-opacity tracking-widest">
+            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:opacity-50 font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-opacity tracking-widest touch-manipulation">
               💾 LƯU TRẬN
             </button>
           </div>
 
           <div className="flex flex-col landscape:flex-row gap-3">
             <div className="flex flex-row flex-1 gap-3">
-              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest">
+              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest touch-manipulation">
                 🔄 RESET
               </button>
-              <Link href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest">
+              <Link href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest touch-manipulation">
                 LỊCH SỬ 📊
               </Link>
             </div>
             
             <div className="flex flex-row flex-1 gap-3">
-              <Link href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest">
+              <Link href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest touch-manipulation">
                 💰 TÀI CHÍNH
               </Link>
-              <Link href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest">
+              <Link href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest touch-manipulation">
                 SYSTEM ⚙️
               </Link>
             </div>

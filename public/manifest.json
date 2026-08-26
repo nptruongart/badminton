@@ -1,17 +1,15 @@
 {
-  "name": "Badminton Club",
-  "short_name": "Cầu Lông",
-  "description": "App quản lý hội cầu lông",
+  "name": "Cyber Badminton",
+  "short_name": "CyberBadminton",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#1890ff",
+  "background_color": "#050505",
+  "theme_color": "#050505",
   "icons": [
     {
-      "src": "/icon.png",
+      "src": "https://img.icons8.com/ios-filled/512/00f3ff/badminton.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }

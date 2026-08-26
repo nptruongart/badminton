@@ -30,7 +30,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} h-full antialiased min-h-full flex flex-col bg-[#111111]`}>
-        
+        <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        </head>        
         {/* Lớp z-10 này sẽ kéo tất cả các nút bấm nổi lên trên cùng */}
         <div className="flex-1 relative z-10 pb-4">
           {children}
