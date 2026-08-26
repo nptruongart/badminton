@@ -20,7 +20,7 @@ export default function Home() {
   }, []);
 
   const resetScores = () => {
-    if (confirm("Bạn có chắc muốn làm mới điểm số?")) {
+    if (confirm("Xóa trắng dữ liệu hệ thống?")) {
       setScore1(0);
       setScore2(0);
     }
@@ -28,7 +28,7 @@ export default function Home() {
 
   const saveMatch = async () => {
     if (score1 === 0 && score2 === 0) {
-      alert("Trận đấu chưa có điểm!");
+      alert("WARNING: Trận đấu chưa có dữ liệu điểm!");
       return;
     }
     
@@ -42,38 +42,42 @@ export default function Home() {
       
       const data = await res.json();
       if (data.success) {
-        alert(`✅ Đã lưu trận đấu & Cập nhật Bảng Xếp Hạng thành công!\n\n${team1Name} (${score1}) - ${team2Name} (${score2})`);
+        alert(`✅ DATA SAVED!\n\n${team1Name} (${score1}) - ${team2Name} (${score2})`);
         setScore1(0);
         setScore2(0);
       } else {
-        alert("Lỗi lưu trận: " + data.error);
+        alert("SYSTEM ERROR: " + data.error);
       }
     } catch (error) {
-      alert("Không thể kết nối đến máy chủ!");
+      alert("OFFLINE: Mất kết nối đến máy chủ!");
     }
     setIsSaving(false);
   };
 
   return (
-    <div className="min-h-screen bg-[#111111] flex flex-col items-center pt-6 pb-10 select-none font-sans">
-      <h1 className="text-xl font-bold text-white mb-8 flex items-center gap-2">
-        🏆 Bảng Đếm Điểm Cầu Lông
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#050505] to-[#000000] flex flex-col items-center pt-6 pb-10 select-none font-sans uppercase">
+      
+      {/* Tiêu đề Cyberpunk */}
+      <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00f3ff] to-[#ff003c] tracking-[0.2em] mb-8 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+        CYBER BADMINTON
       </h1>
 
-      <div className="flex flex-row w-full max-w-md px-2 mb-12">
-        {/* ĐỘI 1 */}
-        <div className="flex-1 flex flex-col items-center">
-          {/* Ô nhập liệu cho phép gõ tay, bình thường tàng hình như text */}
+      <div className="flex flex-row w-full max-w-md px-3 mb-10 gap-3">
+        
+        {/* ĐỘI 1 - HỆ NEON ĐỎ (MAGENTA) */}
+        <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#ff003c] rounded-xl p-3 shadow-[0_0_15px_rgba(255,0,60,0.2)] relative overflow-hidden group">
+          {/* Tia sáng chạy ngang */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#ff003c] to-transparent opacity-50"></div>
+          
           <input
             type="text"
             value={team1Name}
             onChange={(e) => setTeam1Name(e.target.value)}
-            className="w-[90%] bg-transparent text-[#ff4d4f] text-lg md:text-xl font-bold mb-2 tracking-wide text-center h-14 focus:outline-none focus:bg-[#222] rounded-lg transition-colors"
+            className="w-full bg-transparent text-[#ff003c] text-lg md:text-xl font-black tracking-widest text-center h-12 focus:outline-none focus:bg-[#ff003c20] rounded transition-all border-b border-transparent focus:border-[#ff003c] uppercase"
           />
-          <div className="w-3/4 border-t border-dashed border-gray-700 mb-6"></div>
           
           <div 
-            className="text-[120px] sm:text-[140px] leading-none font-black text-[#ff4d4f] mb-8 cursor-pointer active:scale-95 transition-transform drop-shadow-lg"
+            className="text-[110px] sm:text-[130px] leading-none font-black text-[#ff003c] my-4 cursor-pointer active:scale-90 transition-transform drop-shadow-[0_0_20px_rgba(255,0,60,0.8)]"
             onClick={() => setScore1(s => s + 1)}
           >
             {score1}
@@ -81,27 +85,25 @@ export default function Home() {
           
           <button 
             onClick={() => setScore1(s => Math.max(0, s - 1))}
-            className="bg-[#2a2a2a] hover:bg-[#333] text-gray-300 px-6 py-3 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+            className="w-full bg-transparent border border-[#ff003c] text-[#ff003c] hover:bg-[#ff003c] hover:text-black px-4 py-2 rounded font-bold transition-all uppercase tracking-wider text-sm shadow-[inset_0_0_10px_rgba(255,0,60,0.2)]"
           >
-            Trừ 1 điểm
+            Trừ 1
           </button>
         </div>
 
-        <div className="w-px bg-gray-800 mx-1"></div>
-
-        {/* ĐỘI 2 */}
-        <div className="flex-1 flex flex-col items-center">
-          {/* Ô nhập liệu cho phép gõ tay, bình thường tàng hình như text */}
+        {/* ĐỘI 2 - HỆ NEON XANH (CYAN) */}
+        <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#00f3ff] rounded-xl p-3 shadow-[0_0_15px_rgba(0,243,255,0.2)] relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00f3ff] to-transparent opacity-50"></div>
+          
           <input
             type="text"
             value={team2Name}
             onChange={(e) => setTeam2Name(e.target.value)}
-            className="w-[90%] bg-transparent text-[#1890ff] text-lg md:text-xl font-bold mb-2 tracking-wide text-center h-14 focus:outline-none focus:bg-[#222] rounded-lg transition-colors"
+            className="w-full bg-transparent text-[#00f3ff] text-lg md:text-xl font-black tracking-widest text-center h-12 focus:outline-none focus:bg-[#00f3ff20] rounded transition-all border-b border-transparent focus:border-[#00f3ff] uppercase"
           />
-          <div className="w-3/4 border-t border-dashed border-gray-700 mb-6"></div>
           
           <div 
-            className="text-[120px] sm:text-[140px] leading-none font-black text-[#1890ff] mb-8 cursor-pointer active:scale-95 transition-transform drop-shadow-lg"
+            className="text-[110px] sm:text-[130px] leading-none font-black text-[#00f3ff] my-4 cursor-pointer active:scale-90 transition-transform drop-shadow-[0_0_20px_rgba(0,243,255,0.8)]"
             onClick={() => setScore2(s => s + 1)}
           >
             {score2}
@@ -109,32 +111,53 @@ export default function Home() {
           
           <button 
             onClick={() => setScore2(s => Math.max(0, s - 1))}
-            className="bg-[#2a2a2a] hover:bg-[#333] text-gray-300 px-6 py-3 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+            className="w-full bg-transparent border border-[#00f3ff] text-[#00f3ff] hover:bg-[#00f3ff] hover:text-black px-4 py-2 rounded font-bold transition-all uppercase tracking-wider text-sm shadow-[inset_0_0_10px_rgba(0,243,255,0.2)]"
           >
-            Trừ 1 điểm
+            Trừ 1
           </button>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 w-full max-w-md px-4 mt-auto">
-        <Link href="/matchmaking" className="w-full bg-[#9b59b6] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform">
-          ⚡ GHÉP KÈO TRẬN MỚI
+      {/* HỆ THỐNG MENU ĐIỀU KHIỂN - CYBER STYLE */}
+      <div className="flex flex-col gap-4 w-full max-w-md px-4 mt-auto">
+        
+        {/* Nút ghép kèo - Neon Purple */}
+        <Link href="/matchmaking" className="relative group w-full bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] hover:bg-[#b537f2] hover:text-white font-black py-4 rounded flex justify-center items-center gap-2 text-lg transition-all shadow-[0_0_15px_rgba(181,55,242,0.3)] active:scale-95 tracking-widest">
+          <span className="absolute left-0 top-0 w-2 h-full bg-[#b537f2]"></span>
+          ⚡ RẢI KÈO
         </Link>
-        <button onClick={resetScores} className="w-full bg-[#ff4d4f] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform">
-          🔄 LÀM MỚI ĐIỂM
+
+        {/* Nút lưu - Neon Green */}
+        <button onClick={saveMatch} disabled={isSaving} className={`relative group w-full bg-[#0d0d0d] border ${isSaving ? 'border-gray-500 text-gray-500' : 'border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black'} font-black py-4 rounded flex justify-center items-center gap-2 text-lg transition-all shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 tracking-widest`}>
+          <span className={`absolute left-0 top-0 w-2 h-full ${isSaving ? 'bg-gray-500' : 'bg-[#39ff14]'}`}></span>
+          {isSaving ? 'SYSTEM SAVING...' : '💾 LƯU TRẬN'}
         </button>
-        <button onClick={saveMatch} disabled={isSaving} className={`w-full text-black font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform ${isSaving ? 'bg-gray-500' : 'bg-[#2ed573]'}`}>
-          {isSaving ? '⏳ ĐANG LƯU...' : '💾 LƯU TRẬN'}
-        </button>
-        <Link href="/history" className="w-full bg-[#1890ff] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform">
-          📊 LỊCH SỬ
-        </Link>
-        <Link href="/finance" className="w-full bg-[#ffd666] text-black font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform">
-          💰 TÍNH TIỀN
-        </Link>
-        <Link href="/settings" className="w-full bg-[#595959] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 text-lg shadow-lg active:scale-95 transition-transform">
-          ⚙️ CÀI ĐẶT
-        </Link>
+
+        {/* Chia đôi cột cho các chức năng phụ */}
+        <div className="grid grid-cols-2 gap-4">
+          <button onClick={resetScores} className="relative group w-full bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] hover:bg-[#ff003c] hover:text-white font-black py-3 rounded flex justify-center items-center text-sm transition-all shadow-[0_0_10px_rgba(255,0,60,0.3)] active:scale-95 tracking-widest">
+            <span className="absolute left-0 top-0 w-1.5 h-full bg-[#ff003c]"></span>
+            🔄 RESET
+          </button>
+          
+          <Link href="/history" className="relative group w-full bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] hover:bg-[#00f3ff] hover:text-black font-black py-3 rounded flex justify-center items-center text-sm transition-all shadow-[0_0_10px_rgba(0,243,255,0.3)] active:scale-95 tracking-widest">
+            <span className="absolute right-0 top-0 w-1.5 h-full bg-[#00f3ff]"></span>
+            LỊCH SỬ 📊
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Link href="/finance" className="relative group w-full bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] hover:bg-[#fcee0a] hover:text-black font-black py-3 rounded flex justify-center items-center text-sm transition-all shadow-[0_0_10px_rgba(252,238,10,0.3)] active:scale-95 tracking-widest">
+            <span className="absolute left-0 top-0 w-1.5 h-full bg-[#fcee0a]"></span>
+            💰 TÀI CHÍNH
+          </Link>
+          
+          <Link href="/settings" className="relative group w-full bg-[#0d0d0d] border border-gray-400 text-gray-400 hover:bg-gray-400 hover:text-black font-black py-3 rounded flex justify-center items-center text-sm transition-all shadow-[0_0_10px_rgba(156,163,175,0.3)] active:scale-95 tracking-widest">
+            <span className="absolute right-0 top-0 w-1.5 h-full bg-gray-400"></span>
+            SYSTEM ⚙️
+          </Link>
+        </div>
+
       </div>
     </div>
   );
