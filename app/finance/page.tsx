@@ -141,7 +141,7 @@ export default function FinancePage() {
     if (debtor.amount < 0.5) i++; if (creditor.amount < 0.5) j++;
   }
 
-  // 📋 HÀM COPY BÁO CÁO ZALO (ĐÃ ĐƯỢC BỔ SUNG LINK MÃ QR)
+  // 📋 HÀM COPY BÁO CÁO ZALO (ĐÃ TỐI ƯU GỘP 1 LINK XUỐNG DƯỚI)
   const copyZaloReport = () => {
     let report = `🏸 *QUYẾT TOÁN TIỀN CẦU SÂN* 🏸\n`;
     report += `------------------------------------\n`;
@@ -160,16 +160,23 @@ export default function FinancePage() {
     } else {
       transactions.forEach(t => {
         report += `👉 ${t.from} chuyển cho ${t.to}: *${t.amount.toLocaleString()} đ*\n`;
-        
-        // KIỂM TRA: Nếu người nhận (t.to) có nhập STK, tự động nhét link QR vào báo cáo
-        const info = bankInfo[t.to];
-        if (info) {
-          const qrUrl = `https://img.vietqr.io/image/${info.bankId}-${info.accountNo}-compact2.jpg?amount=${t.amount}&addInfo=Thanh%20toan%20tien%20cau%20long&accountName=${encodeURIComponent(t.to)}`;
-          report += `   📲 Link quét QR: ${qrUrl}\n`;
-        }
       });
       if (excess > 0) {
         report += `\n*(Tiền dư làm tròn ${excess.toLocaleString()}đ đã cộng cho người ứng quỹ nhiều nhất)*\n`;
+      }
+
+      // 🚀 TẠO 1 MỤC LINK QR CHUNG BÊN DƯỚI DÀNH CHO CÁC CHỦ NỢ
+      const uniqueReceivers = Array.from(new Set(transactions.map(t => t.to)));
+      const receiversWithBank = uniqueReceivers.filter(r => bankInfo[r]);
+      
+      if (receiversWithBank.length > 0) {
+        report += `\n📲 *MÃ QR CHUYỂN KHOẢN NHANH:*\n`;
+        receiversWithBank.forEach(r => {
+          const info = bankInfo[r];
+          // Bỏ biến amount ra khỏi URL để người quét tự nhập tiền nợ của mình
+          const qrUrl = `https://img.vietqr.io/image/${info.bankId}-${info.accountNo}-compact2.jpg?addInfo=Tien%20cau%20long&accountName=${encodeURIComponent(r)}`;
+          report += `- Chuyển cho ${r}: ${qrUrl}\n`;
+        });
       }
     }
     report += `------------------------------------\n`;
@@ -177,7 +184,7 @@ export default function FinancePage() {
 
     navigator.clipboard.writeText(report).then(() => {
       playSound('success');
-      alert("✅ ĐÃ COPY BÁO CÁO VÀO BỘ NHỚ TẠM!\n\nĐã đính kèm Link quét mã QR. Dán ngay vào Zalo nhé!");
+      alert("✅ ĐÃ COPY BÁO CÁO VÀO BỘ NHỚ TẠM!\n\nĐã gộp Link QR xuống dưới cùng cho gọn. Dán ngay vào Zalo nhé!");
     }).catch(() => alert("❌ Lỗi khi copy, trình duyệt không hỗ trợ!"));
   };
 
@@ -195,6 +202,7 @@ export default function FinancePage() {
               Số tiền: <span className="text-[#fcee0a] text-lg">{qrModal.amount.toLocaleString()} đ</span>
             </p>
             <div className="bg-white p-2 rounded-lg mb-6 w-full flex justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qrModal.url} alt="VietQR" className="w-64 h-64 object-contain rounded" />
             </div>
             <button 
