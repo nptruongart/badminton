@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link"; 
 
 export default function Home() {
   const [score1, setScore1] = useState(0);
@@ -120,7 +121,7 @@ export default function Home() {
             </div>
             <button 
               onClick={() => setScore1(s => Math.max(0, s - 1))}
-              className="w-full bg-[#1a0006] active:bg-[#ff003c] active:text-black border border-[#ff003c] text-[#ff003c] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm flex items-center justify-center"
+              className="w-full bg-[#1a0006] active:opacity-50 border border-[#ff003c] text-[#ff003c] px-2 py-2 rounded font-bold transition-opacity tracking-wider text-xs sm:text-sm flex items-center justify-center"
             >
               Trừ 1
             </button>
@@ -142,47 +143,41 @@ export default function Home() {
             </div>
             <button 
               onClick={() => setScore2(s => Math.max(0, s - 1))}
-              className="w-full bg-[#001a1a] active:bg-[#00f3ff] active:text-black border border-[#00f3ff] text-[#00f3ff] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm flex items-center justify-center"
+              className="w-full bg-[#001a1a] active:opacity-50 border border-[#00f3ff] text-[#00f3ff] px-2 py-2 rounded font-bold transition-opacity tracking-wider text-xs sm:text-sm flex items-center justify-center"
             >
               Trừ 1
             </button>
           </div>
         </div>
 
-        {/* 🚀 BỘ NÚT ĐÃ ĐƯỢC THAY BẰNG THẺ <a href="..."> NGUYÊN THỦY 100% CỦA HTML 🚀 */}
+        {/* 🚀 LỘT SẠCH HIỆU ỨNG ĐỔI MÀU NỀN - CHỈ CÒN ACTIVE:OPACITY-50 (MỜ ĐI) ĐỂ CHỐNG LỖI SAFARI 🚀 */}
         <div className="flex flex-col w-full gap-3 landscape:gap-3 relative z-50 pb-6 mt-2">
           <div className="flex flex-col landscape:flex-row gap-3">
-            {/* Dùng <a> cho Rải Kèo */}
-            <a href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest">
+            <Link href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:opacity-50 font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-opacity tracking-widest">
               ⚡ RẢI KÈO
-            </a>
-            {/* Dùng <button> cho Lưu Trận vì nó gọi hàm JS */}
-            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:bg-[#39ff14] active:text-black font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest">
+            </Link>
+            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:opacity-50 font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-opacity tracking-widest">
               💾 LƯU TRẬN
             </button>
           </div>
 
           <div className="flex flex-col landscape:flex-row gap-3">
             <div className="flex flex-row flex-1 gap-3">
-              {/* Dùng <button> cho Reset vì nó gọi hàm JS */}
-              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:bg-[#ff003c] active:text-white font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest">
+              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest">
                 🔄 RESET
               </button>
-              {/* Dùng <a> cho Lịch Sử */}
-              <a href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest">
+              <Link href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest">
                 LỊCH SỬ 📊
-              </a>
+              </Link>
             </div>
             
             <div className="flex flex-row flex-1 gap-3">
-              {/* Dùng <a> cho Tài Chính */}
-              <a href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest">
+              <Link href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest">
                 💰 TÀI CHÍNH
-              </a>
-              {/* Dùng <a> cho System */}
-              <a href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest">
+              </Link>
+              <Link href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-opacity tracking-widest">
                 SYSTEM ⚙️
-              </a>
+              </Link>
             </div>
           </div>
         </div>
