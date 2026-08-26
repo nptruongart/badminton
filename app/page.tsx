@@ -50,7 +50,6 @@ export default function Home() {
     }
   }, [score1, score2, team1Name, team2Name, isLoaded]);
 
-  // 📱 ĐÃ FIX LỖI TYPESCRIPT: Khai báo rõ nhận cả number HOẶC mảng number[]
   const vibrate = (ms: number | number[] = 50) => {
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(ms);
@@ -83,7 +82,7 @@ export default function Home() {
 
   const triggerWin = (winnerTeam: string) => {
     playSfx('win');
-    vibrate([100, 50, 100, 50, 300]); // Giờ truyền mảng vào thoải mái không bị chửi
+    vibrate([100, 50, 100, 50, 300]); 
     
     if ((window as any).confetti) {
       const duration = 3000;
@@ -136,10 +135,15 @@ export default function Home() {
   if (!isLoaded) return <div className="min-h-screen bg-[#050505]"></div>;
 
   return (
-    <div className={`min-h-[100dvh] w-full bg-[#050505] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#050505] to-[#000000] flex flex-col items-center justify-center select-none font-sans uppercase overflow-y-auto ${isTvMode ? 'p-0' : 'p-2 md:p-4 pb-12'}`}>
+    // Đã thêm overflow-hidden cho TV Mode để cấm tuyệt đối cuộn trang
+    <div className={`min-h-[100dvh] w-full bg-[#050505] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#050505] to-[#000000] flex flex-col items-center justify-center select-none font-sans uppercase ${isTvMode ? 'p-0 overflow-hidden' : 'p-2 md:p-4 pb-12 overflow-y-auto'}`}>
       
+      {/* 📺 NÚT THOÁT TV ĐÃ CHUYỂN RA GIỮA VÀ LÀM MỜ */}
       {isTvMode && (
-        <button onClick={() => setIsTvMode(false)} className="absolute top-4 right-4 z-50 bg-[#ff003c] text-white px-4 py-2 rounded-full font-black opacity-30 hover:opacity-100 transition-opacity">
+        <button 
+          onClick={() => setIsTvMode(false)} 
+          className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-black/50 hover:bg-[#ff003c] text-white px-6 py-2 rounded-full font-black border border-gray-600 hover:border-[#ff003c] transition-all backdrop-blur-md opacity-30 hover:opacity-100 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+        >
           ❌ THOÁT TV
         </button>
       )}
@@ -161,9 +165,20 @@ export default function Home() {
         )}
 
         <div className={`flex flex-row w-full relative z-10 ${isTvMode ? 'h-full gap-0' : 'gap-3 landscape:gap-6'}`}>
-          <div className={`flex-1 flex flex-col items-center justify-center bg-[#0d0d0d] relative overflow-hidden ${isTvMode ? 'border-r-4 border-[#ff003c]' : 'border border-[#ff003c] rounded-xl p-2 sm:p-3'}`}>
-            <input type="text" value={team1Name} onChange={(e) => setTeam1Name(e.target.value)} className={`w-full bg-transparent text-[#ff003c] font-black tracking-widest text-center focus:outline-none focus:bg-[#ff003c20] transition-all border-b border-transparent focus:border-[#ff003c] ${isTvMode ? 'text-3xl md:text-6xl mt-8' : 'text-base sm:text-xl landscape:text-2xl h-10 rounded'}`} />
-            <div className={`leading-none font-black text-[#ff003c] cursor-pointer active:scale-[0.95] transition-transform flex-1 flex items-center justify-center w-full touch-manipulation ${isTvMode ? 'text-[200px] sm:text-[350px] md:text-[450px]' : 'text-[110px] sm:text-[130px] landscape:text-[100px] my-4 landscape:my-1'}`} onClick={() => handleScore1Change(score1 + 1)}>
+          {/* ĐỘI 1 */}
+          <div className={`flex-1 flex flex-col items-center bg-[#0d0d0d] relative overflow-hidden ${isTvMode ? 'border-r-4 border-[#ff003c]' : 'border border-[#ff003c] rounded-xl p-2 sm:p-3 justify-center'}`}>
+            <input 
+              type="text" 
+              value={team1Name} 
+              onChange={(e) => setTeam1Name(e.target.value)} 
+              // Đã fix lỗi Input to quá đè ra ngoài (text-[min(6vw,6vh)])
+              className={`w-full bg-transparent text-[#ff003c] font-black tracking-widest text-center focus:outline-none focus:bg-[#ff003c20] transition-all border-b border-transparent focus:border-[#ff003c] ${isTvMode ? 'text-[min(6vw,6vh)] pt-10 pb-4' : 'text-base sm:text-xl landscape:text-2xl h-10 rounded'}`} 
+            />
+            <div 
+              // Đã fix tỷ số tràn viền bằng text-[min(45vw,70vh)]
+              className={`leading-none font-black text-[#ff003c] cursor-pointer active:scale-[0.95] transition-transform w-full touch-manipulation flex items-center justify-center ${isTvMode ? 'flex-1 text-[min(45vw,70vh)] pb-16' : 'flex-1 text-[110px] sm:text-[130px] landscape:text-[100px] my-4 landscape:my-1'}`} 
+              onClick={() => handleScore1Change(score1 + 1)}
+            >
               {score1}
             </div>
             {!isTvMode && (
@@ -171,9 +186,18 @@ export default function Home() {
             )}
           </div>
 
-          <div className={`flex-1 flex flex-col items-center justify-center bg-[#0d0d0d] relative overflow-hidden ${isTvMode ? '' : 'border border-[#00f3ff] rounded-xl p-2 sm:p-3'}`}>
-            <input type="text" value={team2Name} onChange={(e) => setTeam2Name(e.target.value)} className={`w-full bg-transparent text-[#00f3ff] font-black tracking-widest text-center focus:outline-none focus:bg-[#00f3ff20] transition-all border-b border-transparent focus:border-[#00f3ff] ${isTvMode ? 'text-3xl md:text-6xl mt-8' : 'text-base sm:text-xl landscape:text-2xl h-10 rounded'}`} />
-            <div className={`leading-none font-black text-[#00f3ff] cursor-pointer active:scale-[0.95] transition-transform flex-1 flex items-center justify-center w-full touch-manipulation ${isTvMode ? 'text-[200px] sm:text-[350px] md:text-[450px]' : 'text-[110px] sm:text-[130px] landscape:text-[100px] my-4 landscape:my-1'}`} onClick={() => handleScore2Change(score2 + 1)}>
+          {/* ĐỘI 2 */}
+          <div className={`flex-1 flex flex-col items-center bg-[#0d0d0d] relative overflow-hidden ${isTvMode ? '' : 'border border-[#00f3ff] rounded-xl p-2 sm:p-3 justify-center'}`}>
+            <input 
+              type="text" 
+              value={team2Name} 
+              onChange={(e) => setTeam2Name(e.target.value)} 
+              className={`w-full bg-transparent text-[#00f3ff] font-black tracking-widest text-center focus:outline-none focus:bg-[#00f3ff20] transition-all border-b border-transparent focus:border-[#00f3ff] ${isTvMode ? 'text-[min(6vw,6vh)] pt-10 pb-4' : 'text-base sm:text-xl landscape:text-2xl h-10 rounded'}`} 
+            />
+            <div 
+              className={`leading-none font-black text-[#00f3ff] cursor-pointer active:scale-[0.95] transition-transform w-full touch-manipulation flex items-center justify-center ${isTvMode ? 'flex-1 text-[min(45vw,70vh)] pb-16' : 'flex-1 text-[110px] sm:text-[130px] landscape:text-[100px] my-4 landscape:my-1'}`} 
+              onClick={() => handleScore2Change(score2 + 1)}
+            >
               {score2}
             </div>
             {!isTvMode && (
