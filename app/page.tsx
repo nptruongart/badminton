@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link"; // Dùng lại Link gốc của Next.js cho cực chuẩn
 
 export default function Home() {
-  const router = useRouter();
   const [score1, setScore1] = useState(0);
   const [score2, setScore2] = useState(0);
   const [team1Name, setTeam1Name] = useState("ĐỘI 1");
   const [team2Name, setTeam2Name] = useState("ĐỘI 2");
-  
-  // Cờ báo hiệu đã load data xong (Khắc phục lỗi đè điểm 0)
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -35,7 +32,6 @@ export default function Home() {
     setIsLoaded(true);
   }, []);
 
-  // Chỉ cho phép lưu state sau khi đã load xong data cũ
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem("cyber_match_state", JSON.stringify({ team1Name, team2Name, score1, score2 }));
@@ -52,7 +48,6 @@ export default function Home() {
   const saveMatch = () => {
     if (score1 === 0 && score2 === 0) return alert("WARNING: Trận chưa có điểm!");
     
-    // 1. Lưu vào Lịch sử
     const history = JSON.parse(localStorage.getItem("cyber_match_history") || "[]");
     history.unshift({
       id: Date.now(),
@@ -64,7 +59,6 @@ export default function Home() {
     });
     localStorage.setItem("cyber_match_history", JSON.stringify(history));
 
-    // 2. CẬP NHẬT ELO TRỰC TIẾP LÊN LOCALSTORAGE (Đồng bộ bảng Rank)
     let players = JSON.parse(localStorage.getItem("cyber_players") || "[]");
     const isT1Win = score1 > score2;
     const isT2Win = score2 > score1;
@@ -127,7 +121,7 @@ export default function Home() {
             </div>
             <button 
               onClick={() => setScore1(s => Math.max(0, s - 1))}
-              className="w-full bg-[#1a0006] active:bg-[#ff003c] active:text-black border border-[#ff003c] text-[#ff003c] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm touch-manipulation"
+              className="w-full bg-[#1a0006] active:bg-[#ff003c] active:text-black border border-[#ff003c] text-[#ff003c] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm touch-manipulation flex items-center justify-center"
             >
               Trừ 1
             </button>
@@ -149,41 +143,41 @@ export default function Home() {
             </div>
             <button 
               onClick={() => setScore2(s => Math.max(0, s - 1))}
-              className="w-full bg-[#001a1a] active:bg-[#00f3ff] active:text-black border border-[#00f3ff] text-[#00f3ff] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm touch-manipulation"
+              className="w-full bg-[#001a1a] active:bg-[#00f3ff] active:text-black border border-[#00f3ff] text-[#00f3ff] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm touch-manipulation flex items-center justify-center"
             >
               Trừ 1
             </button>
           </div>
         </div>
 
-        {/* CÁC NÚT ĐÃ ĐƯỢC ĐỔI TỪ LINK SANG BUTTON CHUẨN IOS */}
+        {/* CÁC NÚT ĐÃ ĐƯỢC ĐỔI LẠI SANG THẺ <Link> CHUẨN */}
         <div className="flex flex-col w-full gap-3 landscape:gap-3">
           <div className="flex flex-col landscape:flex-row gap-3">
-            <button onClick={() => router.push('/matchmaking')} className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
+            <Link href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
               ⚡ RẢI KÈO
-            </button>
-            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:bg-[#39ff14] active:text-black font-black py-4 landscape:py-3 rounded flex justify-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
+            </Link>
+            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:bg-[#39ff14] active:text-black font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
               💾 LƯU TRẬN
             </button>
           </div>
 
           <div className="flex flex-col landscape:flex-row gap-3">
             <div className="flex flex-row flex-1 gap-3">
-              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:bg-[#ff003c] active:text-white font-black py-3 landscape:py-2.5 rounded flex justify-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:bg-[#ff003c] active:text-white font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
                 🔄 RESET
               </button>
-              <button onClick={() => router.push('/history')} className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              <Link href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
                 LỊCH SỬ 📊
-              </button>
+              </Link>
             </div>
             
             <div className="flex flex-row flex-1 gap-3">
-              <button onClick={() => router.push('/finance')} className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              <Link href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
                 💰 TÀI CHÍNH
-              </button>
-              <button onClick={() => router.push('/settings')} className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              </Link>
+              <Link href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
                 SYSTEM ⚙️
-              </button>
+              </Link>
             </div>
           </div>
         </div>
