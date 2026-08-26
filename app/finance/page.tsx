@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState, useEffect } from "react";
 
@@ -12,7 +13,7 @@ export default function FinancePage() {
   const [amountStr, setAmountStr] = useState(""); 
   const [selectedPayer, setSelectedPayer] = useState("");
   
-  // State lưu thông tin ngân hàng của các tay vợt
+  // State lưu thông tin ngân hàng (CHỈ LƯU TẠM THỜI, KHÔNG DÙNG LOCALSTORAGE NỮA)
   const [bankInfo, setBankInfo] = useState<Record<string, { bankId: string, accountNo: string }>>({});
   const [qrModal, setQrModal] = useState<{ isOpen: boolean, url: string, payerName: string, amount: number } | null>(null);
 
@@ -20,13 +21,13 @@ export default function FinancePage() {
 
   useEffect(() => {
     const savedExp = JSON.parse(localStorage.getItem("cyber_expenses") || "[]");
-    // Ép kiểu chuẩn xác để Vercel không báo lỗi Build
     const savedPlayers = JSON.parse(localStorage.getItem("cyber_players") || "[]").map((p: PlayerData) => p.name);
-    const savedBanks = JSON.parse(localStorage.getItem("cyber_banks") || "{}");
+    
+    // 🔥 Quét dọn sạch sẽ rác STK cũ nếu trước đó lỡ lưu
+    localStorage.removeItem("cyber_banks"); 
     
     setExpenses(savedExp); 
     setPlayers(savedPlayers); 
-    setBankInfo(savedBanks);
     if (savedPlayers.length > 0) setSelectedPayer(savedPlayers[0]);
     setIsLoaded(true);
   }, []);
@@ -74,11 +75,13 @@ export default function FinancePage() {
   const handleClear = () => {
     if (confirm("⚠️ Xóa sạch lịch sử thu chi?")) {
       playSound('delete');
-      setExpenses([]); localStorage.removeItem("cyber_expenses");
+      setExpenses([]); 
+      localStorage.removeItem("cyber_expenses");
+      setBankInfo({}); // Xóa luôn STK tạm thời khi reset quỹ
     }
   };
 
-  // 🏦 Setup Bank Info Nhanh
+  // 🏦 Setup Bank Info (CHỈ LƯU TẠM THỜI RAM)
   const setupBankInfo = (playerName: string) => {
     const bankId = prompt(`Nhập TÊN NGÂN HÀNG của ${playerName}\n(VD: VCB, MB, TCB, Momo, ACB...):`, bankInfo[playerName]?.bankId || "");
     if (!bankId) return;
@@ -87,16 +90,15 @@ export default function FinancePage() {
 
     const newBankInfo = { ...bankInfo, [playerName]: { bankId: bankId.trim().toUpperCase(), accountNo: accountNo.trim() } };
     setBankInfo(newBankInfo);
-    localStorage.setItem("cyber_banks", JSON.stringify(newBankInfo));
     playSound('success');
-    alert(`✅ Đã lưu STK cho ${playerName}!`);
+    alert(`✅ Đã lưu tạm STK cho ${playerName} trong phiên này!`);
   };
 
   // 📱 Mở mã VietQR
   const openQR = (payerName: string, amount: number) => {
     const info = bankInfo[payerName];
     if (!info) {
-      alert(`⚠️ ${payerName} chưa cài đặt Số Tài Khoản. Vui lòng cài đặt trước!`);
+      alert(`⚠️ ${payerName} chưa nhập Số Tài Khoản cho lần quyết toán này!`);
       setupBankInfo(payerName);
       return;
     }
@@ -280,7 +282,7 @@ export default function FinancePage() {
                     </button>
                   ) : (
                     <button onClick={() => setupBankInfo(p)} className="text-[#ff003c] text-xs font-bold px-3 py-1.5 border border-[#ff003c] rounded touch-manipulation animate-pulse">
-                      + CÀI ĐẶT STK
+                      + CÀI ĐẶT STK TẠM THỜI
                     </button>
                   )}
                 </div>
