@@ -55,8 +55,8 @@ export default function Home() {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
         osc.start(); osc.stop(ctx.currentTime + 0.08);
       } else if (type === 'save') {
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); 
         gain.gain.setValueAtTime(0.1, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
         osc.start(); osc.stop(ctx.currentTime + 0.25);
@@ -70,10 +70,16 @@ export default function Home() {
     } catch (e) {}
   };
 
-  const speakScore = (s1: number, s2: number) => {
+  // 🤖 HÀM TRỌNG TÀI AI ĐỌC ĐIỂM (ĐÃ NÂNG CẤP ĐẢO CHIỀU ĐỌC)
+  const speakScore = (s1: number, s2: number, scorer: 1 | 2) => {
     if (!voiceEnabled || typeof window === "undefined" || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    const text = `${team1Name} ${s1}, ${team2Name} ${s2}`;
+    
+    // Logic đảo chiều: Ai vừa ăn điểm thì đọc tên đội đó trước
+    const text = scorer === 1 
+      ? `${team1Name} ${s1}, ${team2Name} ${s2}`
+      : `${team2Name} ${s2}, ${team1Name} ${s1}`;
+      
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'vi-VN';
     utterance.rate = 1.1;
@@ -83,13 +89,13 @@ export default function Home() {
   const handleScore1Change = (newS1: number) => {
     playSfx('ting');
     setScore1(newS1);
-    speakScore(newS1, score2);
+    speakScore(newS1, score2, 1); // Báo cho AI biết Đội 1 vừa nhảy điểm
   };
 
   const handleScore2Change = (newS2: number) => {
     playSfx('ting');
     setScore2(newS2);
-    speakScore(score1, newS2);
+    speakScore(score1, newS2, 2); // Báo cho AI biết Đội 2 vừa nhảy điểm
   };
 
   const resetScores = () => {
@@ -162,6 +168,7 @@ export default function Home() {
         </div>
 
         <div className="flex flex-row w-full gap-3 landscape:gap-6 relative z-10">
+          {/* ĐỘI 1 */}
           <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#ff003c] rounded-xl p-2 sm:p-3 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#ff003c] to-transparent opacity-50"></div>
             <input
@@ -184,6 +191,7 @@ export default function Home() {
             </button>
           </div>
 
+          {/* ĐỘI 2 */}
           <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#00f3ff] rounded-xl p-2 sm:p-3 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00f3ff] to-transparent opacity-50"></div>
             <input
@@ -207,7 +215,9 @@ export default function Home() {
           </div>
         </div>
 
+        {/* DÀN NÚT TRÌNH BÀY LẠI CHO ĐẸP VÀ CHỨA ĐỦ 6 TÍNH NĂNG */}
         <div className="flex flex-col w-full gap-3 landscape:gap-3 relative z-50 pb-6 mt-2">
+          
           <div className="flex flex-col landscape:flex-row gap-3">
             <Link href="/matchmaking" onClick={() => playSfx('ting')} className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:opacity-50 font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm tracking-widest touch-manipulation">
               ⚡ RẢI KÈO
@@ -222,20 +232,25 @@ export default function Home() {
               <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs tracking-widest touch-manipulation">
                 🔄 RESET
               </button>
-              <Link href="/history" onClick={() => playSfx('ting')} className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs tracking-widest touch-manipulation">
-                LỊCH SỬ 📊
+              <Link href="/analytics" onClick={() => playSfx('ting')} className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs tracking-widest touch-manipulation">
+                THỐNG KÊ 📈
               </Link>
             </div>
             
             <div className="flex flex-row flex-1 gap-3">
+              <Link href="/history" onClick={() => playSfx('ting')} className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs tracking-widest touch-manipulation">
+                LỊCH SỬ 📊
+              </Link>
               <Link href="/finance" onClick={() => playSfx('ting')} className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs tracking-widest touch-manipulation">
                 💰 TÀI CHÍNH
               </Link>
-              <Link href="/settings" onClick={() => playSfx('ting')} className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:opacity-50 font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs tracking-widest touch-manipulation">
-                SYSTEM ⚙️
-              </Link>
             </div>
           </div>
+
+          <Link href="/settings" onClick={() => playSfx('ting')} className="w-full bg-[#0d0d0d] border border-gray-400 text-gray-400 active:opacity-50 font-black py-3 rounded flex justify-center items-center text-sm tracking-widest touch-manipulation mt-1">
+            SYSTEM ⚙️
+          </Link>
+
         </div>
       </div>
     </div>
