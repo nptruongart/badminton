@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// Đã xóa bỏ import Link của Next.js để dùng thẻ <a> nguyên thủy
 
 export default function Home() {
   const [score1, setScore1] = useState(0);
@@ -93,6 +92,11 @@ export default function Home() {
     setScore2(0);
   };
 
+  // 🔥 VŨ KHÍ HẠNG NẶNG: ÉP CHUYỂN TRANG BẰNG JAVASCRIPT GỐC
+  const forceNavigate = (url: string) => {
+    window.location.href = url;
+  };
+
   if (!isLoaded) return <div className="min-h-screen bg-[#050505]"></div>;
 
   return (
@@ -103,7 +107,7 @@ export default function Home() {
       </h1>
 
       <div className="flex flex-col items-center justify-center w-full max-w-md landscape:max-w-4xl gap-4 landscape:gap-3">
-        <div className="flex flex-row w-full gap-3 landscape:gap-6">
+        <div className="flex flex-row w-full gap-3 landscape:gap-6 relative z-10">
           
           <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#ff003c] rounded-xl p-2 sm:p-3 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#ff003c] to-transparent opacity-50"></div>
@@ -150,34 +154,34 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 🚀 ĐÃ THAY TOÀN BỘ SANG THẺ <a href="..."> ĐỂ ÉP TRÌNH DUYỆT CHUYỂN TRANG 100% */}
-        <div className="flex flex-col w-full gap-3 landscape:gap-3">
+        {/* NÚT BẤM SỬ DỤNG FORCENAVIGATE & Z-INDEX CAO NHẤT */}
+        <div className="flex flex-col w-full gap-3 landscape:gap-3 relative z-50">
           <div className="flex flex-col landscape:flex-row gap-3">
-            <a href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
+            <button onClick={() => forceNavigate('/matchmaking')} className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation cursor-pointer">
               ⚡ RẢI KÈO
-            </a>
-            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:bg-[#39ff14] active:text-black font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
+            </button>
+            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:bg-[#39ff14] active:text-black font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation cursor-pointer">
               💾 LƯU TRẬN
             </button>
           </div>
 
           <div className="flex flex-col landscape:flex-row gap-3">
             <div className="flex flex-row flex-1 gap-3">
-              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:bg-[#ff003c] active:text-white font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:bg-[#ff003c] active:text-white font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation cursor-pointer">
                 🔄 RESET
               </button>
-              <a href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              <button onClick={() => forceNavigate('/history')} className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation cursor-pointer">
                 LỊCH SỬ 📊
-              </a>
+              </button>
             </div>
             
             <div className="flex flex-row flex-1 gap-3">
-              <a href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              <button onClick={() => forceNavigate('/finance')} className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation cursor-pointer">
                 💰 TÀI CHÍNH
-              </a>
-              <a href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              </button>
+              <button onClick={() => forceNavigate('/settings')} className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation cursor-pointer">
                 SYSTEM ⚙️
-              </a>
+              </button>
             </div>
           </div>
         </div>
