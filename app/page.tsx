@@ -13,23 +13,20 @@ export default function Home() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isTvMode, setIsTvMode] = useState(false);
   const [maxScore, setMaxScore] = useState(21);
-  const [isListening, setIsListening] = useState(false); // Trạng thái Mic
-  const [showPosterBtn, setShowPosterBtn] = useState(false); // Nút chụp Poster
+  const [isListening, setIsListening] = useState(false); 
+  const [showPosterBtn, setShowPosterBtn] = useState(false); 
 
-  // Dùng Ref để AI Voice lấy được điểm số mới nhất mà không bị kẹt (Stale State)
   const score1Ref = useRef(0);
   const score2Ref = useRef(0);
   useEffect(() => { score1Ref.current = score1; }, [score1]);
   useEffect(() => { score2Ref.current = score2; }, [score2]);
 
   useEffect(() => {
-    // 1. Tải thư viện Pháo Hoa
     const scriptConfetti = document.createElement("script");
     scriptConfetti.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
     scriptConfetti.async = true;
     document.body.appendChild(scriptConfetti);
 
-    // 2. Tải thư viện Chụp Ảnh Poster (html2canvas)
     const scriptCanvas = document.createElement("script");
     scriptCanvas.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
     scriptCanvas.async = true;
@@ -136,7 +133,7 @@ export default function Home() {
     else speakScore(score1Ref.current, newS2, 2);
   };
 
-  // 🎙️ HÀM AI NGHE LỆNH GIỌNG NÓI
+  // 🎙️ HÀM AI NGHE LỆNH GIỌNG NÓI (ĐÃ FIX LỖI NGU)
   const toggleMic = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return alert("Trình duyệt không hỗ trợ nhận diện giọng nói! (Khuyên dùng Chrome/Safari)");
@@ -156,9 +153,14 @@ export default function Home() {
       const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
       console.log("AI Nghe được: ", transcript);
       
-      if (transcript.includes("đội 1") || transcript.includes("đội một") || transcript.includes("cộng 1") || transcript.includes("bên trái")) {
+      // Thuật toán bóc tách từ khóa thông minh (Loại bỏ các số dễ gây nhầm lẫn)
+      const isTeam1 = transcript.includes("đội 1") || transcript.includes("đội một") || transcript.includes("bên trái") || transcript.includes("đội đỏ");
+      const isTeam2 = transcript.includes("đội 2") || transcript.includes("đội hai") || transcript.includes("bên phải") || transcript.includes("đội xanh");
+      
+      // Xử lý cộng điểm dựa vào mục tiêu được gọi tên
+      if (isTeam1 && !isTeam2) {
         handleScore1Change(score1Ref.current + 1);
-      } else if (transcript.includes("đội 2") || transcript.includes("đội hai") || transcript.includes("cộng 2") || transcript.includes("bên phải")) {
+      } else if (isTeam2 && !isTeam1) {
         handleScore2Change(score2Ref.current + 1);
       }
     };
@@ -197,7 +199,6 @@ export default function Home() {
     const t1Names = team1Name.split(" & ").map(n => n.trim());
     const t2Names = team2Name.split(" & ").map(n => n.trim());
 
-    // 🔥 CẬP NHẬT CHUỖI THẮNG (WINSTREAK)
     players = players.map((p: any) => {
       if (t1Names.includes(p.name)) {
         let eloChange = isDraw ? 0 : (isT1Win ? 10 : -5);
@@ -238,7 +239,6 @@ export default function Home() {
               {isListening && <span className="absolute -top-2 -right-4 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>}
             </h1>
             <div className="flex flex-wrap gap-2 justify-end">
-              {/* 🎙️ NÚT KÍCH HOẠT VOICE COMMAND */}
               <button onClick={toggleMic} className={`px-3 py-1 rounded text-xs font-black tracking-widest border transition-all touch-manipulation flex items-center gap-1 ${isListening ? 'bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse' : 'bg-black border-gray-700 text-gray-500'}`}>
                 🎙️ {isListening ? "ĐANG NGHE" : "MIC"}
               </button>
@@ -279,7 +279,6 @@ export default function Home() {
       {!isTvMode && (
         <div className="flex flex-col w-full max-w-md landscape:max-w-4xl gap-3 landscape:gap-3 relative z-50 pb-6 mt-4">
           
-          {/* 📸 NÚT CHỤP POSTER CHỈ HIỆN KHI CÓ ĐỘI CHẠM MỐC */}
           {showPosterBtn && (
              <button onClick={capturePoster} className="w-full bg-gradient-to-r from-[#ff003c] to-[#00f3ff] text-white font-black py-4 rounded-xl flex justify-center items-center text-lg tracking-[0.2em] shadow-[0_0_20px_rgba(255,255,255,0.4)] animate-pulse">
                📸 LƯU POSTER KẾT QUẢ 📸
