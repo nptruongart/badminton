@@ -16,10 +16,16 @@ export default function Home() {
   const [isListening, setIsListening] = useState(false); 
   const [showPosterBtn, setShowPosterBtn] = useState(false); 
 
+  // Dùng Ref để AI luôn lấy được dữ liệu mới nhất (Điểm và Tên Đội)
   const score1Ref = useRef(0);
   const score2Ref = useRef(0);
+  const team1NameRef = useRef("");
+  const team2NameRef = useRef("");
+  
   useEffect(() => { score1Ref.current = score1; }, [score1]);
   useEffect(() => { score2Ref.current = score2; }, [score2]);
+  useEffect(() => { team1NameRef.current = team1Name; }, [team1Name]);
+  useEffect(() => { team2NameRef.current = team2Name; }, [team2Name]);
 
   useEffect(() => {
     const scriptConfetti = document.createElement("script");
@@ -133,7 +139,15 @@ export default function Home() {
     else speakScore(score1Ref.current, newS2, 2);
   };
 
-  // 🎙️ HÀM AI NGHE LỆNH GIỌNG NÓI (ĐÃ FIX LỖI NGU)
+  // 🔤 THUẬT TOÁN LỘT DẤU TIẾNG VIỆT
+  const toNonAccent = (str: string) => {
+    return str.toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Bỏ dấu sắc, huyền, hỏi, ngã, nặng
+      .replace(/đ/g, "d");             // Đổi đ thành d
+  };
+
+  // 🎙️ HÀM AI NGHE LỆNH GIỌNG NÓI (NÂNG CẤP BẮT TÊN CẦU THỦ)
   const toggleMic = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return alert("Trình duyệt không hỗ trợ nhận diện giọng nói! (Khuyên dùng Chrome/Safari)");
@@ -150,14 +164,23 @@ export default function Home() {
     
     recognition.onstart = () => { setIsListening(true); playSfx('mic'); vibrate(50); };
     recognition.onresult = (event: any) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
-      console.log("AI Nghe được: ", transcript);
+      const rawTranscript = event.results[event.results.length - 1][0].transcript;
+      const transcript = toNonAccent(rawTranscript); // Đưa câu nói về không dấu
+      console.log("AI Nghe được (Gốc):", rawTranscript, "-> (Lột dấu):", transcript);
       
-      // Thuật toán bóc tách từ khóa thông minh (Loại bỏ các số dễ gây nhầm lẫn)
-      const isTeam1 = transcript.includes("đội 1") || transcript.includes("đội một") || transcript.includes("bên trái") || transcript.includes("đội đỏ");
-      const isTeam2 = transcript.includes("đội 2") || transcript.includes("đội hai") || transcript.includes("bên phải") || transcript.includes("đội xanh");
+      // Bóc tách tên các thành viên của Đội 1 và Đội 2
+      // (Ví dụ: "Dean & Liên" -> ["dean", "lien"])
+      const t1Players = team1NameRef.current.split('&').map(n => toNonAccent(n.trim())).filter(n => n.length > 0);
+      const t2Players = team2NameRef.current.split('&').map(n => toNonAccent(n.trim())).filter(n => n.length > 0);
+
+      // Kiểm tra xem trong câu nói có chứa Tên của người nào không
+      const mentionedT1 = t1Players.some(name => transcript.includes(name));
+      const mentionedT2 = t2Players.some(name => transcript.includes(name));
+
+      // Kiểm tra cả các từ khóa chung (Bên trái, bên phải...)
+      const isTeam1 = mentionedT1 || transcript.includes("doi 1") || transcript.includes("doi mot") || transcript.includes("ben trai") || transcript.includes("doi do");
+      const isTeam2 = mentionedT2 || transcript.includes("doi 2") || transcript.includes("doi hai") || transcript.includes("ben phai") || transcript.includes("doi xanh");
       
-      // Xử lý cộng điểm dựa vào mục tiêu được gọi tên
       if (isTeam1 && !isTeam2) {
         handleScore1Change(score1Ref.current + 1);
       } else if (isTeam2 && !isTeam1) {
@@ -171,7 +194,6 @@ export default function Home() {
     (window as any).recognition = recognition;
   };
 
-  // 📸 HÀM CHỤP POSTER ESPORTS
   const capturePoster = () => {
     const el = document.getElementById("scoreboard-zone");
     if (!el || !(window as any).html2canvas) return alert("Lỗi tải thư viện ảnh. Vui lòng tải lại trang!");
@@ -229,7 +251,6 @@ export default function Home() {
         </button>
       )}
 
-      {/* KHU VỰC ĐỂ CHỤP POSTER ESPORTS */}
       <div id="scoreboard-zone" className={`flex flex-col items-center justify-center w-full ${isTvMode ? 'h-[100dvh] max-w-none' : 'max-w-md landscape:max-w-4xl gap-4 landscape:gap-3 my-auto pt-6'}`}>
         
         {!isTvMode && (
