@@ -1,9 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState, useEffect } from "react";
 
 interface Expense { id: number; desc: string; amount: number; payer: string; }
 interface Transaction { from: string; to: string; amount: number; }
+interface PlayerData { name: string; [key: string]: unknown; }
 
 export default function FinancePage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -20,7 +20,8 @@ export default function FinancePage() {
 
   useEffect(() => {
     const savedExp = JSON.parse(localStorage.getItem("cyber_expenses") || "[]");
-    const savedPlayers = JSON.parse(localStorage.getItem("cyber_players") || "[]").map((p: any) => p.name);
+    // Ép kiểu chuẩn xác để Vercel không báo lỗi Build
+    const savedPlayers = JSON.parse(localStorage.getItem("cyber_players") || "[]").map((p: PlayerData) => p.name);
     const savedBanks = JSON.parse(localStorage.getItem("cyber_banks") || "{}");
     
     setExpenses(savedExp); 
@@ -33,7 +34,9 @@ export default function FinancePage() {
   // 🎵 HÀM PHÁT ÂM THANH SFX
   const playSound = (type: 'click' | 'success' | 'delete') => {
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
@@ -190,6 +193,8 @@ export default function FinancePage() {
               Số tiền: <span className="text-[#fcee0a] text-lg">{qrModal.amount.toLocaleString()} đ</span>
             </p>
             <div className="bg-white p-2 rounded-lg mb-6 w-full flex justify-center">
+              {/* Lệnh bùa chú vượt tường lửa Vercel */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qrModal.url} alt="VietQR" className="w-64 h-64 object-contain rounded" />
             </div>
             <button 
@@ -228,7 +233,7 @@ export default function FinancePage() {
           </button>
         )}
 
-        {/* PHƯƠNG ÁN CHUYỂN TIỀN (CÓ NÚT MỞ QR) */}
+        {/* PHƯƠNG ÁN CHUYỂN TIỀN (CÓ NÚT MỞ QR XANH LÈ) */}
         {transactions.length > 0 && (
           <div className="bg-[#0d0d0d] p-5 rounded border border-[#b537f2]/30 shadow-[0_0_15px_rgba(181,55,242,0.15)]">
             <h2 className="text-[#b537f2] font-black tracking-widest mb-4 flex items-center gap-2">
@@ -237,17 +242,17 @@ export default function FinancePage() {
             </h2>
             <div className="flex flex-col gap-3">
               {transactions.map((t, idx) => (
-                <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-black p-3 border border-gray-800 rounded gap-2">
-                  <div className="flex items-center gap-2 flex-1 w-full">
+                <div key={idx} className="flex flex-col sm:flex-row justify-between items-center bg-black p-3 border border-gray-800 rounded gap-3">
+                  <div className="flex items-center gap-2 w-full sm:w-auto overflow-hidden">
                     <span className="text-[#ff003c] font-bold text-sm truncate">{t.from}</span>
                     <span className="text-gray-500 text-xs shrink-0">👉 chuyển 👉</span>
                     <span className="text-[#00f3ff] font-bold text-sm truncate">{t.to}</span>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t border-gray-800 sm:border-none">
+                  <div className="flex items-center justify-between w-full sm:w-auto gap-4">
                     <span className="text-[#fcee0a] font-black">{t.amount.toLocaleString()} đ</span>
-                    {/* 🚀 NÚT KÍCH HOẠT VIETQR 🚀 */}
-                    <button onClick={() => openQR(t.to, t.amount)} className="bg-[#39ff14]/20 border border-[#39ff14] text-[#39ff14] px-4 py-1.5 rounded text-xs font-black shrink-0 touch-manipulation active:bg-[#39ff14] active:text-black transition-colors">
-                      MỞ QR
+                    {/* 🚀 NÚT KÍCH HOẠT VIETQR TÔ MÀU XANH NỔI BẬT 🚀 */}
+                    <button onClick={() => openQR(t.to, t.amount)} className="bg-[#39ff14] text-black px-4 py-2 rounded text-xs font-black shrink-0 touch-manipulation hover:scale-105 transition-transform shadow-[0_0_10px_rgba(57,255,20,0.5)]">
+                      MỞ QR 📱
                     </button>
                   </div>
                 </div>
