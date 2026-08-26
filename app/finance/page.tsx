@@ -13,7 +13,6 @@ export default function FinancePage() {
   const [amountStr, setAmountStr] = useState(""); 
   const [selectedPayer, setSelectedPayer] = useState("");
   
-  // State lưu thông tin ngân hàng (CHỈ LƯU TẠM THỜI, KHÔNG DÙNG LOCALSTORAGE NỮA)
   const [bankInfo, setBankInfo] = useState<Record<string, { bankId: string, accountNo: string }>>({});
   const [qrModal, setQrModal] = useState<{ isOpen: boolean, url: string, payerName: string, amount: number } | null>(null);
 
@@ -23,7 +22,6 @@ export default function FinancePage() {
     const savedExp = JSON.parse(localStorage.getItem("cyber_expenses") || "[]");
     const savedPlayers = JSON.parse(localStorage.getItem("cyber_players") || "[]").map((p: PlayerData) => p.name);
     
-    // 🔥 Quét dọn sạch sẽ rác STK cũ nếu trước đó lỡ lưu
     localStorage.removeItem("cyber_banks"); 
     
     setExpenses(savedExp); 
@@ -32,7 +30,6 @@ export default function FinancePage() {
     setIsLoaded(true);
   }, []);
 
-  // 🎵 HÀM PHÁT ÂM THANH SFX
   const playSound = (type: 'click' | 'success' | 'delete') => {
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -77,11 +74,10 @@ export default function FinancePage() {
       playSound('delete');
       setExpenses([]); 
       localStorage.removeItem("cyber_expenses");
-      setBankInfo({}); // Xóa luôn STK tạm thời khi reset quỹ
+      setBankInfo({}); 
     }
   };
 
-  // 🏦 Setup Bank Info (CHỈ LƯU TẠM THỜI RAM)
   const setupBankInfo = (playerName: string) => {
     const bankId = prompt(`Nhập TÊN NGÂN HÀNG của ${playerName}\n(VD: VCB, MB, TCB, Momo, ACB...):`, bankInfo[playerName]?.bankId || "");
     if (!bankId) return;
@@ -94,7 +90,6 @@ export default function FinancePage() {
     alert(`✅ Đã lưu tạm STK cho ${playerName} trong phiên này!`);
   };
 
-  // 📱 Mở mã VietQR
   const openQR = (payerName: string, amount: number) => {
     const info = bankInfo[payerName];
     if (!info) {
@@ -107,7 +102,6 @@ export default function FinancePage() {
     setQrModal({ isOpen: true, url: qrUrl, payerName, amount });
   };
 
-  // --- THUẬT TOÁN BÙ TRỪ & LÀM TRÒN ---
   const totalSpent = expenses.reduce((sum, item) => sum + item.amount, 0);
   const playersCount = Math.max(1, players.length);
   
@@ -147,17 +141,17 @@ export default function FinancePage() {
     if (debtor.amount < 0.5) i++; if (creditor.amount < 0.5) j++;
   }
 
-  // 📋 HÀM COPY BÁO CÁO ZALO
+  // 📋 HÀM COPY BÁO CÁO ZALO (ĐÃ ĐƯỢC BỔ SUNG LINK MÃ QR)
   const copyZaloReport = () => {
     let report = `🏸 *QUYẾT TOÁN TIỀN CẦU SÂN* 🏸\n`;
     report += `------------------------------------\n`;
     report += `💰 Tổng chi phí: ${totalSpent.toLocaleString()} đ\n`;
     report += `👥 Số người tham gia: ${playersCount}\n`;
-    report += `📊 Mỗi người đóng: ${perPerson.toLocaleString()} đ (Đã làm tròn)\n\n`;
+    report += `📊 Mỗi người đóng: ${perPerson.toLocaleString()} đ\n\n`;
     
     report += `📝 *CHI TIẾT KHOẢN CHI:*\n`;
     expenses.forEach(e => {
-      report += `- ${e.desc}: ${e.amount.toLocaleString()} đ (${e.payer} ứng)\n`;
+      report += `- ${e.desc}: ${e.amount.toLocaleString()} đ (${e.payer})\n`;
     });
 
     report += `\n💸 *PHƯƠNG ÁN CHUYỂN KHOẢN:*\n`;
@@ -166,9 +160,16 @@ export default function FinancePage() {
     } else {
       transactions.forEach(t => {
         report += `👉 ${t.from} chuyển cho ${t.to}: *${t.amount.toLocaleString()} đ*\n`;
+        
+        // KIỂM TRA: Nếu người nhận (t.to) có nhập STK, tự động nhét link QR vào báo cáo
+        const info = bankInfo[t.to];
+        if (info) {
+          const qrUrl = `https://img.vietqr.io/image/${info.bankId}-${info.accountNo}-compact2.jpg?amount=${t.amount}&addInfo=Thanh%20toan%20tien%20cau%20long&accountName=${encodeURIComponent(t.to)}`;
+          report += `   📲 Link quét QR: ${qrUrl}\n`;
+        }
       });
       if (excess > 0) {
-        report += `\n*(Tiền dư làm tròn ${excess.toLocaleString()}đ đã được cộng cho người ứng quỹ nhiều nhất)*\n`;
+        report += `\n*(Tiền dư làm tròn ${excess.toLocaleString()}đ đã cộng cho người ứng quỹ nhiều nhất)*\n`;
       }
     }
     report += `------------------------------------\n`;
@@ -176,7 +177,7 @@ export default function FinancePage() {
 
     navigator.clipboard.writeText(report).then(() => {
       playSound('success');
-      alert("✅ ĐÃ COPY BÁO CÁO VÀO BỘ NHỚ TẠM!\n\nBạn có thể dán (Paste) trực tiếp vào group Zalo.");
+      alert("✅ ĐÃ COPY BÁO CÁO VÀO BỘ NHỚ TẠM!\n\nĐã đính kèm Link quét mã QR. Dán ngay vào Zalo nhé!");
     }).catch(() => alert("❌ Lỗi khi copy, trình duyệt không hỗ trợ!"));
   };
 
@@ -185,7 +186,6 @@ export default function FinancePage() {
   return (
     <div className="min-h-[100dvh] bg-[#050505] text-white p-4 font-sans uppercase pb-20 overflow-y-auto">
       
-      {/* 📱 MODAL HIỂN THỊ MÃ QR */}
       {qrModal && qrModal.isOpen && (
         <div className="fixed inset-0 bg-black/90 z-[999] flex flex-col items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-[#0d0d0d] border-2 border-[#39ff14] p-4 rounded-xl max-w-sm w-full flex flex-col items-center shadow-[0_0_30px_rgba(57,255,20,0.3)]">
@@ -195,8 +195,6 @@ export default function FinancePage() {
               Số tiền: <span className="text-[#fcee0a] text-lg">{qrModal.amount.toLocaleString()} đ</span>
             </p>
             <div className="bg-white p-2 rounded-lg mb-6 w-full flex justify-center">
-              {/* Lệnh bùa chú vượt tường lửa Vercel */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qrModal.url} alt="VietQR" className="w-64 h-64 object-contain rounded" />
             </div>
             <button 
@@ -215,7 +213,6 @@ export default function FinancePage() {
       </div>
 
       <div className="max-w-xl mx-auto space-y-6">
-        {/* TỔNG QUAN */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-[#0d0d0d] p-4 rounded border border-[#ff003c]/50 flex flex-col justify-center items-center text-center">
             <div className="text-gray-400 text-xs font-bold tracking-widest mb-1">TỔNG CHI PHÍ</div>
@@ -228,14 +225,12 @@ export default function FinancePage() {
           </div>
         </div>
 
-        {/* NÚT COPY BÁO CÁO ZALO */}
         {expenses.length > 0 && (
           <button onClick={copyZaloReport} className="w-full bg-[#0d0d0d] border-2 border-[#00f3ff] text-[#00f3ff] active:opacity-50 font-black py-4 rounded flex justify-center items-center gap-2 text-base transition-all shadow-[0_0_15px_rgba(0,243,255,0.3)] tracking-widest touch-manipulation cursor-pointer">
             📤 COPY BÁO CÁO GỬI ZALO
           </button>
         )}
 
-        {/* PHƯƠNG ÁN CHUYỂN TIỀN (CÓ NÚT MỞ QR XANH LÈ) */}
         {transactions.length > 0 && (
           <div className="bg-[#0d0d0d] p-5 rounded border border-[#b537f2]/30 shadow-[0_0_15px_rgba(181,55,242,0.15)]">
             <h2 className="text-[#b537f2] font-black tracking-widest mb-4 flex items-center gap-2">
@@ -252,7 +247,6 @@ export default function FinancePage() {
                   </div>
                   <div className="flex items-center justify-between w-full sm:w-auto gap-4">
                     <span className="text-[#fcee0a] font-black">{t.amount.toLocaleString()} đ</span>
-                    {/* 🚀 NÚT KÍCH HOẠT VIETQR TÔ MÀU XANH NỔI BẬT 🚀 */}
                     <button onClick={() => openQR(t.to, t.amount)} className="bg-[#39ff14] text-black px-4 py-2 rounded text-xs font-black shrink-0 touch-manipulation hover:scale-105 transition-transform shadow-[0_0_10px_rgba(57,255,20,0.5)]">
                       MỞ QR 📱
                     </button>
@@ -268,7 +262,6 @@ export default function FinancePage() {
           </div>
         )}
 
-        {/* CÀI ĐẶT NGÂN HÀNG (Dành cho người nhận) */}
         {players.filter(p => balances[p] > 0).length > 0 && (
           <div className="bg-[#0d0d0d] p-5 rounded border border-[#39ff14]/30 shadow-[0_0_10px_rgba(57,255,20,0.1)]">
             <h2 className="text-[#39ff14] font-black tracking-widest mb-4">CÀI ĐẶT BANK NGƯỜI NHẬN</h2>
@@ -291,7 +284,6 @@ export default function FinancePage() {
           </div>
         )}
 
-        {/* SỐ DƯ TỔNG QUÁT */}
         <div className="bg-[#0d0d0d] p-5 rounded border border-[#39ff14]/30 shadow-[0_0_10px_rgba(57,255,20,0.1)]">
           <h2 className="text-[#39ff14] font-black tracking-widest mb-4">SỐ DƯ TỔNG QUÁT</h2>
           <div className="flex flex-col gap-2">
@@ -316,7 +308,6 @@ export default function FinancePage() {
           </div>
         </div>
 
-        {/* FORM NHẬP KHOẢN CHI */}
         <div className="bg-[#0d0d0d] p-5 rounded border border-gray-700">
           <h2 className="text-[#fcee0a] font-black tracking-widest mb-4">GHI NHẬN KHOẢN CHI</h2>
           <div className="flex flex-col gap-3">
@@ -332,7 +323,6 @@ export default function FinancePage() {
           </div>
         </div>
 
-        {/* LỊCH SỬ KHOẢN CHI */}
         <div className="bg-[#0d0d0d] p-5 rounded border border-gray-700">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-white font-black tracking-widest">LỊCH SỬ CHI TIÊU</h2>
@@ -354,7 +344,6 @@ export default function FinancePage() {
             ))}
           </div>
         </div>
-
       </div>
     </div>
   );
