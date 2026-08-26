@@ -38,7 +38,6 @@ export default function FinancePage() {
     setIsLoaded(true);
   }, []);
 
-  // 🎵 HÀM PHÁT ÂM THANH SFX
   const playSound = (type: 'click' | 'success' | 'delete') => {
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -59,9 +58,7 @@ export default function FinancePage() {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
         osc.start(); osc.stop(ctx.currentTime + 0.15);
       }
-    } catch (e) {
-      // Bỏ qua nếu trình duyệt chặn âm thanh tự động
-    }
+    } catch (e) {}
   };
 
   const handleAdd = () => {
@@ -87,10 +84,15 @@ export default function FinancePage() {
     }
   };
 
-  // --- THUẬT TOÁN BÙ TRỪ & GIAO DỊCH ---
+  // --- THUẬT TOÁN BÙ TRỪ (ĐÃ NÂNG CẤP LÀM TRÒN LÊN HÀNG NGHÌN) ---
   const totalSpent = expenses.reduce((sum, item) => sum + item.amount, 0);
   const playersCount = Math.max(1, players.length);
-  const perPerson = Math.ceil(totalSpent / playersCount);
+  
+  // 1. Làm tròn LÊN hàng nghìn (VD: 41.375 -> 42.000)
+  const perPerson = Math.ceil((totalSpent / playersCount) / 1000) * 1000;
+  
+  // 2. Tính số tiền bị dư ra do làm tròn lên
+  const excess = (perPerson * playersCount) - totalSpent;
 
   const balances: Record<string, number> = {};
   players.forEach(p => { balances[p] = -perPerson; });
@@ -99,6 +101,17 @@ export default function FinancePage() {
     if (balances[e.payer] === undefined) balances[e.payer] = 0;
     balances[e.payer] += e.amount;
   });
+
+  // 3. Tặng phần tiền lẻ dư ra cho người đang cho ứng nhiều tiền nhất
+  if (excess > 0 && Object.keys(balances).length > 0) {
+    let topCreditor = Object.keys(balances)[0];
+    for (const p of Object.keys(balances)) {
+      if (balances[p] > balances[topCreditor]) {
+        topCreditor = p;
+      }
+    }
+    balances[topCreditor] += excess;
+  }
 
   const transactions: Transaction[] = [];
   const debtors: { name: string; amount: number }[] = [];
@@ -127,17 +140,16 @@ export default function FinancePage() {
     if (creditor.amount < 0.5) j++;
   }
 
-  // 📋 HÀM COPY BÁO CÁO ZALO
   const copyZaloReport = () => {
     let report = `🏸 *QUYẾT TOÁN TIỀN CẦU SÂN* 🏸\n`;
     report += `------------------------------------\n`;
     report += `💰 Tổng chi phí: ${totalSpent.toLocaleString()} đ\n`;
     report += `👥 Số người tham gia: ${playersCount}\n`;
-    report += `📊 Trung bình mỗi người: ${perPerson.toLocaleString()} đ\n\n`;
+    report += `📊 Mỗi người đóng: ${perPerson.toLocaleString()} đ (Đã làm tròn)\n\n`;
     
     report += `📝 *CHI TIẾT KHOẢN CHI:*\n`;
     expenses.forEach(e => {
-      report += `- ${e.desc}: ${e.amount.toLocaleString()} đ (${e.payer} ứng)\n`;
+      report += `- ${e.desc}: ${e.amount.toLocaleString()} đ (${e.payer})\n`;
     });
 
     report += `\n💸 *PHƯƠNG ÁN CHUYỂN KHOẢN:*\n`;
@@ -147,6 +159,9 @@ export default function FinancePage() {
       transactions.forEach(t => {
         report += `👉 ${t.from} chuyển cho ${t.to}: *${t.amount.toLocaleString()} đ*\n`;
       });
+      if (excess > 0) {
+        report += `\n*(Lưu ý: Tiền dư làm tròn ${excess.toLocaleString()}đ đã được tự động cộng cho người ứng nhiều tiền nhất)*\n`;
+      }
     }
     report += `------------------------------------\n`;
     report += `⚡ Powered by Cyber Badminton`;
@@ -177,12 +192,13 @@ export default function FinancePage() {
             <div className="text-[#ff003c] text-xl font-black">{totalSpent.toLocaleString()} đ</div>
           </div>
           <div className="bg-[#0d0d0d] p-4 rounded border border-[#00f3ff]/50 flex flex-col justify-center items-center text-center">
-            <div className="text-gray-400 text-xs font-bold tracking-widest mb-1">TRUNG BÌNH ({playersCount} NGƯỜI)</div>
+            <div className="text-gray-400 text-[10px] font-bold tracking-widest mb-1">TRUNG BÌNH ({playersCount} NGƯỜI)</div>
             <div className="text-[#00f3ff] text-xl font-black">{perPerson.toLocaleString()} đ</div>
+            <div className="text-gray-500 text-[9px] mt-1">(Đã làm tròn chẵn)</div>
           </div>
         </div>
 
-        {/* NÚT COPY BÁO CÁO ZALO 🔥 */}
+        {/* NÚT COPY BÁO CÁO ZALO */}
         {expenses.length > 0 && (
           <button 
             onClick={copyZaloReport}
@@ -211,6 +227,11 @@ export default function FinancePage() {
                 </div>
               ))}
             </div>
+            {excess > 0 && (
+              <div className="mt-4 pt-3 border-t border-gray-800 text-gray-500 text-[10px] italic text-center">
+                *Tiền lẻ làm tròn dư ({excess.toLocaleString()}đ) được cộng cho người ứng quỹ nhiều nhất.
+              </div>
+            )}
           </div>
         )}
 
