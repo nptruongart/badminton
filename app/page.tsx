@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link"; // Quay lại dùng Link xịn của Next.js
 
 export default function Home() {
   const [score1, setScore1] = useState(0);
@@ -96,7 +95,6 @@ export default function Home() {
   if (!isLoaded) return <div className="min-h-screen bg-[#050505]"></div>;
 
   return (
-    // 🔥 FIX LỖI IOS: Đổi min-h-screen thành min-h-[100dvh], thêm overflow-y-auto và pb-12
     <div className="min-h-[100dvh] w-full bg-[#050505] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#050505] to-[#000000] flex flex-col items-center justify-center p-2 md:p-4 pb-12 select-none font-sans uppercase overflow-y-auto">
       
       <div className="flex flex-col items-center justify-center w-full max-w-md landscape:max-w-4xl gap-4 landscape:gap-3 my-auto pt-6">
@@ -105,7 +103,6 @@ export default function Home() {
           CYBER BADMINTON
         </h1>
 
-        {/* CỤM BẢNG ĐIỂM */}
         <div className="flex flex-row w-full gap-3 landscape:gap-6 relative z-10">
           <div className="flex-1 flex flex-col items-center bg-[#0d0d0d] border border-[#ff003c] rounded-xl p-2 sm:p-3 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#ff003c] to-transparent opacity-50"></div>
@@ -116,14 +113,14 @@ export default function Home() {
               className="w-full bg-transparent text-[#ff003c] text-base sm:text-xl landscape:text-2xl font-black tracking-widest text-center h-10 focus:outline-none focus:bg-[#ff003c20] rounded transition-all border-b border-transparent focus:border-[#ff003c]"
             />
             <div 
-              className="text-[110px] sm:text-[130px] landscape:text-[100px] leading-none font-black text-[#ff003c] my-4 landscape:my-1 cursor-pointer active:scale-[0.85] transition-transform duration-75 touch-manipulation"
+              className="text-[110px] sm:text-[130px] landscape:text-[100px] leading-none font-black text-[#ff003c] my-4 landscape:my-1 cursor-pointer active:scale-[0.85] transition-transform duration-75"
               onClick={() => setScore1(s => s + 1)}
             >
               {score1}
             </div>
             <button 
               onClick={() => setScore1(s => Math.max(0, s - 1))}
-              className="w-full bg-[#1a0006] active:bg-[#ff003c] active:text-black border border-[#ff003c] text-[#ff003c] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm touch-manipulation flex items-center justify-center"
+              className="w-full bg-[#1a0006] active:bg-[#ff003c] active:text-black border border-[#ff003c] text-[#ff003c] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm flex items-center justify-center"
             >
               Trừ 1
             </button>
@@ -138,48 +135,54 @@ export default function Home() {
               className="w-full bg-transparent text-[#00f3ff] text-base sm:text-xl landscape:text-2xl font-black tracking-widest text-center h-10 focus:outline-none focus:bg-[#00f3ff20] rounded transition-all border-b border-transparent focus:border-[#00f3ff]"
             />
             <div 
-              className="text-[110px] sm:text-[130px] landscape:text-[100px] leading-none font-black text-[#00f3ff] my-4 landscape:my-1 cursor-pointer active:scale-[0.85] transition-transform duration-75 touch-manipulation"
+              className="text-[110px] sm:text-[130px] landscape:text-[100px] leading-none font-black text-[#00f3ff] my-4 landscape:my-1 cursor-pointer active:scale-[0.85] transition-transform duration-75"
               onClick={() => setScore2(s => s + 1)}
             >
               {score2}
             </div>
             <button 
               onClick={() => setScore2(s => Math.max(0, s - 1))}
-              className="w-full bg-[#001a1a] active:bg-[#00f3ff] active:text-black border border-[#00f3ff] text-[#00f3ff] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm touch-manipulation flex items-center justify-center"
+              className="w-full bg-[#001a1a] active:bg-[#00f3ff] active:text-black border border-[#00f3ff] text-[#00f3ff] px-2 py-2 rounded font-bold transition-colors tracking-wider text-xs sm:text-sm flex items-center justify-center"
             >
               Trừ 1
             </button>
           </div>
         </div>
 
-        {/* CỤM NÚT ĐIỀU KHIỂN - Thêm pb-6 để đệm đáy trên iPhone */}
+        {/* 🚀 BỘ NÚT ĐÃ ĐƯỢC THAY BẰNG THẺ <a href="..."> NGUYÊN THỦY 100% CỦA HTML 🚀 */}
         <div className="flex flex-col w-full gap-3 landscape:gap-3 relative z-50 pb-6 mt-2">
           <div className="flex flex-col landscape:flex-row gap-3">
-            <Link href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation cursor-pointer">
+            {/* Dùng <a> cho Rải Kèo */}
+            <a href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest">
               ⚡ RẢI KÈO
-            </Link>
-            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:bg-[#39ff14] active:text-black font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation cursor-pointer">
+            </a>
+            {/* Dùng <button> cho Lưu Trận vì nó gọi hàm JS */}
+            <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:bg-[#39ff14] active:text-black font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest">
               💾 LƯU TRẬN
             </button>
           </div>
 
           <div className="flex flex-col landscape:flex-row gap-3">
             <div className="flex flex-row flex-1 gap-3">
-              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:bg-[#ff003c] active:text-white font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation cursor-pointer">
+              {/* Dùng <button> cho Reset vì nó gọi hàm JS */}
+              <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:bg-[#ff003c] active:text-white font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest">
                 🔄 RESET
               </button>
-              <Link href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation cursor-pointer">
+              {/* Dùng <a> cho Lịch Sử */}
+              <a href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest">
                 LỊCH SỬ 📊
-              </Link>
+              </a>
             </div>
             
             <div className="flex flex-row flex-1 gap-3">
-              <Link href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation cursor-pointer">
+              {/* Dùng <a> cho Tài Chính */}
+              <a href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest">
                 💰 TÀI CHÍNH
-              </Link>
-              <Link href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation cursor-pointer">
+              </a>
+              {/* Dùng <a> cho System */}
+              <a href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest">
                 SYSTEM ⚙️
-              </Link>
+              </a>
             </div>
           </div>
         </div>
