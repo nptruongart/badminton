@@ -38,12 +38,39 @@ export default function FinancePage() {
     setIsLoaded(true);
   }, []);
 
+  // 🎵 HÀM PHÁT ÂM THANH SFX
+  const playSound = (type: 'click' | 'success' | 'delete') => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'click') {
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        osc.start(); osc.stop(ctx.currentTime + 0.05);
+      } else if (type === 'success') {
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.start(); osc.stop(ctx.currentTime + 0.15);
+      }
+    } catch (e) {
+      // Bỏ qua nếu trình duyệt chặn âm thanh tự động
+    }
+  };
+
   const handleAdd = () => {
     const amount = Number(amountStr);
     if (!desc || isNaN(amount) || amount <= 0 || !selectedPayer) {
       return alert("VUI LÒNG NHẬP ĐẦY ĐỦ THÔNG TIN VÀ NGƯỜI CHI!");
     }
     
+    playSound('success');
     const newExp = { id: Date.now(), desc, amount, payer: selectedPayer };
     const updated = [...expenses, newExp];
     setExpenses(updated);
@@ -54,93 +81,118 @@ export default function FinancePage() {
 
   const handleClear = () => {
     if (confirm("⚠️ DANGER: Xóa sạch toàn bộ lịch sử thu chi?")) {
+      playSound('delete');
       setExpenses([]);
       localStorage.removeItem("cyber_expenses");
     }
   };
 
-  // --- THUẬT TOÁN BÙ TRỪ VÀ TÍNH TOÁN CHUYỂN KHOẢN (SPLITWISE LOGIC) ---
+  // --- THUẬT TOÁN BÙ TRỪ & GIAO DỊCH ---
   const totalSpent = expenses.reduce((sum, item) => sum + item.amount, 0);
   const playersCount = Math.max(1, players.length);
   const perPerson = Math.ceil(totalSpent / playersCount);
 
-  // 1. Tính toán số dư cho từng người
   const balances: Record<string, number> = {};
-  
-  // Gán mức nợ mặc định
   players.forEach(p => { balances[p] = -perPerson; });
 
-  // Cộng số tiền đã ứng
   expenses.forEach(e => {
     if (balances[e.payer] === undefined) balances[e.payer] = 0;
     balances[e.payer] += e.amount;
   });
 
-  // 2. Thuật toán phân bổ chuyển khoản
   const transactions: Transaction[] = [];
   const debtors: { name: string; amount: number }[] = [];
   const creditors: { name: string; amount: number }[] = [];
 
-  // Tách nhóm Nợ (Cần đóng) và nhóm Dư (Nhận lại)
   for (const [name, balance] of Object.entries(balances)) {
     if (balance < -0.5) debtors.push({ name, amount: Math.abs(balance) });
     else if (balance > 0.5) creditors.push({ name, amount: balance });
   }
 
-  // Sắp xếp giảm dần để ưu tiên người nợ nhiều trả cho người nhận nhiều (Tối ưu số lần chuyển)
   debtors.sort((a, b) => b.amount - a.amount);
   creditors.sort((a, b) => b.amount - a.amount);
 
-  let i = 0;
-  let j = 0;
-
+  let i = 0; let j = 0;
   while (i < debtors.length && j < creditors.length) {
     const debtor = debtors[i];
     const creditor = creditors[j];
-    
     const transferAmount = Math.min(debtor.amount, creditor.amount);
     
     if (transferAmount > 0) {
-      transactions.push({
-        from: debtor.name,
-        to: creditor.name,
-        amount: Math.round(transferAmount)
-      });
+      transactions.push({ from: debtor.name, to: creditor.name, amount: Math.round(transferAmount) });
     }
-    
-    // Cập nhật lại số tiền sau khi đã bù trừ
     debtor.amount -= transferAmount;
     creditor.amount -= transferAmount;
-    
-    // Nếu ai đã thanh toán xong thì nhảy sang người tiếp theo
     if (debtor.amount < 0.5) i++;
     if (creditor.amount < 0.5) j++;
   }
 
+  // 📋 HÀM COPY BÁO CÁO ZALO
+  const copyZaloReport = () => {
+    let report = `🏸 *QUYẾT TOÁN TIỀN CẦU SÂN* 🏸\n`;
+    report += `------------------------------------\n`;
+    report += `💰 Tổng chi phí: ${totalSpent.toLocaleString()} đ\n`;
+    report += `👥 Số người tham gia: ${playersCount}\n`;
+    report += `📊 Trung bình mỗi người: ${perPerson.toLocaleString()} đ\n\n`;
+    
+    report += `📝 *CHI TIẾT KHOẢN CHI:*\n`;
+    expenses.forEach(e => {
+      report += `- ${e.desc}: ${e.amount.toLocaleString()} đ (${e.payer} ứng)\n`;
+    });
+
+    report += `\n💸 *PHƯƠNG ÁN CHUYỂN KHOẢN:*\n`;
+    if (transactions.length === 0) {
+      report += `(Tất cả đã hòa tiền!)\n`;
+    } else {
+      transactions.forEach(t => {
+        report += `👉 ${t.from} chuyển cho ${t.to}: *${t.amount.toLocaleString()} đ*\n`;
+      });
+    }
+    report += `------------------------------------\n`;
+    report += `⚡ Powered by Cyber Badminton`;
+
+    navigator.clipboard.writeText(report).then(() => {
+      playSound('success');
+      alert("✅ ĐÃ COPY BÁO CÁO VÀO BỘ NHỚ TẠM!\n\nBạn có thể dán (Paste) trực tiếp vào group Zalo.");
+    }).catch(() => {
+      alert("❌ Lỗi khi copy, trình duyệt không hỗ trợ!");
+    });
+  };
+
   if (!isLoaded) return <div className="min-h-screen bg-[#050505]"></div>;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-4 font-sans uppercase pb-10">
+    <div className="min-h-[100dvh] bg-[#050505] text-white p-4 font-sans uppercase pb-20 overflow-y-auto">
       <div className="max-w-xl mx-auto flex justify-between items-center mb-6 border-b border-[#fcee0a] pb-4">
         <h1 className="text-xl font-black text-[#fcee0a] tracking-widest">HỆ THỐNG TÀI CHÍNH</h1>
-        <button onClick={() => router.push('/')} className="bg-[#0d0d0d] border border-gray-500 text-gray-400 px-4 py-2 rounded font-bold text-sm touch-manipulation">QUAY LẠI</button>
+        <a href="/" onClick={() => playSound('click')} className="bg-[#0d0d0d] border border-gray-500 text-gray-400 px-4 py-2 rounded font-bold text-sm touch-manipulation">QUAY LẠI</a>
       </div>
 
       <div className="max-w-xl mx-auto space-y-6">
         
-        {/* TỔNG QUAN TÀI CHÍNH */}
+        {/* TỔNG QUAN */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-[#0d0d0d] p-4 rounded border border-[#ff003c]/50 flex flex-col justify-center items-center text-center">
-            <div className="text-gray-400 text-xs font-bold tracking-widest mb-1 break-words w-full">TỔNG CHI PHÍ</div>
-            <div className="text-[#ff003c] text-xl font-black break-words w-full">{totalSpent.toLocaleString()} đ</div>
+            <div className="text-gray-400 text-xs font-bold tracking-widest mb-1">TỔNG CHI PHÍ</div>
+            <div className="text-[#ff003c] text-xl font-black">{totalSpent.toLocaleString()} đ</div>
           </div>
           <div className="bg-[#0d0d0d] p-4 rounded border border-[#00f3ff]/50 flex flex-col justify-center items-center text-center">
-            <div className="text-gray-400 text-xs font-bold tracking-widest mb-1 break-words w-full">TRUNG BÌNH ({playersCount} NGƯỜI)</div>
-            <div className="text-[#00f3ff] text-xl font-black break-words w-full">{perPerson.toLocaleString()} đ</div>
+            <div className="text-gray-400 text-xs font-bold tracking-widest mb-1">TRUNG BÌNH ({playersCount} NGƯỜI)</div>
+            <div className="text-[#00f3ff] text-xl font-black">{perPerson.toLocaleString()} đ</div>
           </div>
         </div>
 
-        {/* CỤM MỚI: HƯỚNG DẪN CHUYỂN KHOẢN (SPLITWISE) */}
+        {/* NÚT COPY BÁO CÁO ZALO 🔥 */}
+        {expenses.length > 0 && (
+          <button 
+            onClick={copyZaloReport}
+            className="w-full bg-[#0d0d0d] border-2 border-[#00f3ff] text-[#00f3ff] active:opacity-50 font-black py-4 rounded flex justify-center items-center gap-2 text-base transition-all shadow-[0_0_15px_rgba(0,243,255,0.3)] tracking-widest touch-manipulation cursor-pointer"
+          >
+            📤 COPY BÁO CÁO GỬI ZALO
+          </button>
+        )}
+
+        {/* PHƯƠNG ÁN CHUYỂN TIỀN */}
         {transactions.length > 0 && (
           <div className="bg-[#0d0d0d] p-5 rounded border border-[#b537f2]/30 shadow-[0_0_15px_rgba(181,55,242,0.15)]">
             <h2 className="text-[#b537f2] font-black tracking-widest mb-4 flex items-center gap-2">
@@ -152,7 +204,7 @@ export default function FinancePage() {
                 <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-black p-3 border border-gray-800 rounded gap-2">
                   <div className="flex items-center gap-2 flex-1">
                     <span className="text-[#ff003c] font-bold text-sm truncate">{t.from}</span>
-                    <span className="text-gray-500 text-xs shrink-0">👉 chuyển cho 👉</span>
+                    <span className="text-gray-500 text-xs shrink-0">👉 chuyển 👉</span>
                     <span className="text-[#00f3ff] font-bold text-sm truncate">{t.to}</span>
                   </div>
                   <span className="text-[#fcee0a] font-black shrink-0 sm:text-right">{t.amount.toLocaleString()} đ</span>
@@ -162,7 +214,7 @@ export default function FinancePage() {
           </div>
         )}
 
-        {/* BẢNG QUYẾT TOÁN TỔNG QUÁT (Giữ lại để xem ai lời ai lỗ tổng) */}
+        {/* SỐ DƯ TỔNG QUÁT */}
         <div className="bg-[#0d0d0d] p-5 rounded border border-[#39ff14]/30 shadow-[0_0_10px_rgba(57,255,20,0.1)]">
           <h2 className="text-[#39ff14] font-black tracking-widest mb-4">SỐ DƯ TỔNG QUÁT</h2>
           <div className="flex flex-col gap-2">
@@ -215,12 +267,12 @@ export default function FinancePage() {
                   <option key={p} value={p}>{p}</option>
                 ))}
               </select>
-              <button onClick={handleAdd} className="bg-[#fcee0a] text-black px-6 py-3 font-black rounded active:scale-95 touch-manipulation">LƯU</button>
+              <button onClick={handleAdd} className="bg-[#fcee0a] text-black px-6 py-3 font-black rounded active:opacity-50 touch-manipulation cursor-pointer">LƯU</button>
             </div>
           </div>
         </div>
 
-        {/* LỊCH SỬ KHOẢN CHI CỤ THỂ */}
+        {/* LỊCH SỬ KHOẢN CHI */}
         <div className="bg-[#0d0d0d] p-5 rounded border border-gray-700">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-white font-black tracking-widest">LỊCH SỬ CHI TIÊU</h2>
@@ -235,9 +287,9 @@ export default function FinancePage() {
               <div key={e.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-black p-3 border border-gray-800 rounded gap-1">
                 <div className="flex flex-col">
                   <span className="text-gray-300 font-bold text-sm truncate">{e.desc}</span>
-                  <span className="text-gray-500 text-xs mt-1">Người chi: <span className="text-[#00f3ff]">{e.payer || "Ai đó"}</span></span>
+                  <span className="text-gray-500 text-xs mt-1">Người chi: <span className="text-[#00f3ff]">{e.payer}</span></span>
                 </div>
-                <span className="text-[#fcee0a] font-black shrink-0 sm:text-right mt-1 sm:mt-0">{e.amount.toLocaleString()} đ</span>
+                <span className="text-[#fcee0a] font-black shrink-0 sm:text-right">{e.amount.toLocaleString()} đ</span>
               </div>
             ))}
           </div>
