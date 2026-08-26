@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link"; // Dùng lại Link gốc của Next.js cho cực chuẩn
+// Đã xóa bỏ import Link của Next.js để dùng thẻ <a> nguyên thủy
 
 export default function Home() {
   const [score1, setScore1] = useState(0);
@@ -150,12 +150,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* CÁC NÚT ĐÃ ĐƯỢC ĐỔI LẠI SANG THẺ <Link> CHUẨN */}
+        {/* 🚀 ĐÃ THAY TOÀN BỘ SANG THẺ <a href="..."> ĐỂ ÉP TRÌNH DUYỆT CHUYỂN TRANG 100% */}
         <div className="flex flex-col w-full gap-3 landscape:gap-3">
           <div className="flex flex-col landscape:flex-row gap-3">
-            <Link href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
+            <a href="/matchmaking" className="flex-1 bg-[#0d0d0d] border border-[#b537f2] text-[#b537f2] active:bg-[#b537f2] active:text-white font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
               ⚡ RẢI KÈO
-            </Link>
+            </a>
             <button onClick={saveMatch} className="flex-1 bg-[#0d0d0d] border border-[#39ff14] text-[#39ff14] active:bg-[#39ff14] active:text-black font-black py-4 landscape:py-3 rounded flex justify-center items-center text-lg landscape:text-sm transition-colors tracking-widest touch-manipulation">
               💾 LƯU TRẬN
             </button>
@@ -166,18 +166,18 @@ export default function Home() {
               <button onClick={resetScores} className="flex-1 bg-[#0d0d0d] border border-[#ff003c] text-[#ff003c] active:bg-[#ff003c] active:text-white font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
                 🔄 RESET
               </button>
-              <Link href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              <a href="/history" className="flex-1 bg-[#0d0d0d] border border-[#00f3ff] text-[#00f3ff] active:bg-[#00f3ff] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
                 LỊCH SỬ 📊
-              </Link>
+              </a>
             </div>
             
             <div className="flex flex-row flex-1 gap-3">
-              <Link href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              <a href="/finance" className="flex-1 bg-[#0d0d0d] border border-[#fcee0a] text-[#fcee0a] active:bg-[#fcee0a] active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
                 💰 TÀI CHÍNH
-              </Link>
-              <Link href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
+              </a>
+              <a href="/settings" className="flex-1 bg-[#0d0d0d] border border-gray-400 text-gray-400 active:bg-gray-400 active:text-black font-black py-3 landscape:py-2.5 rounded flex justify-center items-center text-sm landscape:text-xs transition-colors tracking-widest touch-manipulation">
                 SYSTEM ⚙️
-              </Link>
+              </a>
             </div>
           </div>
         </div>
