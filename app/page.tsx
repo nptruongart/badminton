@@ -16,7 +16,6 @@ export default function Home() {
   const [isListening, setIsListening] = useState(false); 
   const [showPosterBtn, setShowPosterBtn] = useState(false); 
 
-  // 🔥 State mới để theo dõi Chuỗi Điểm (Point Streak)
   const [pointStreak, setPointStreak] = useState<{team: 1 | 2 | 0, count: number}>({team: 0, count: 0});
 
   const score1Ref = useRef(0);
@@ -39,6 +38,12 @@ export default function Home() {
     scriptCanvas.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
     scriptCanvas.async = true;
     document.body.appendChild(scriptCanvas);
+
+    // Kích hoạt nạp danh sách giọng nói của trình duyệt từ sớm
+    if (typeof window !== "undefined" && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
 
     const saved = localStorage.getItem("cyber_match_state");
     const config = JSON.parse(localStorage.getItem("cyber_config") || '{"maxScore": 21}');
@@ -102,7 +107,19 @@ export default function Home() {
     } catch (e) {}
   };
 
-  // 🏆 HÀM BÌNH LUẬN KẾT QUẢ KHI CHIẾN THẮNG
+  // 🌟 THUẬT TOÁN SĂN GIỌNG PREMIUM TỰ NHIÊN NHẤT
+  const getBestVietnameseVoice = () => {
+    if (typeof window === "undefined" || !('speechSynthesis' in window)) return null;
+    const voices = window.speechSynthesis.getVoices();
+    // 1. Ưu tiên giọng Google Mạng (Cực kỳ tự nhiên trên Chrome/Android)
+    let bestVoice = voices.find(v => v.lang.includes('vi') && v.name.includes('Google'));
+    // 2. Nếu không có, tìm giọng Premium của Apple
+    if (!bestVoice) bestVoice = voices.find(v => v.lang.includes('vi') && v.name.includes('Premium'));
+    // 3. Cuối cùng mới lấy giọng tiếng Việt mặc định
+    if (!bestVoice) bestVoice = voices.find(v => v.lang.includes('vi'));
+    return bestVoice || null;
+  };
+
   const triggerWin = (winnerTeam: string, s1: number, s2: number) => {
     playSfx('win'); vibrate([100, 50, 100, 50, 300]); 
     if ((window as any).confetti) {
@@ -124,12 +141,16 @@ export default function Home() {
       else if (diff <= 2) winText = `Tuyệt vời! Một chiến thắng vô cùng nghẹt thở và cảm xúc dành cho nhà vô địch ${winnerTeam}!`;
 
       const utterance = new SpeechSynthesisUtterance(winText);
-      utterance.lang = 'vi-VN'; utterance.rate = 1.0; utterance.pitch = 1.2;
+      utterance.lang = 'vi-VN'; 
+      utterance.rate = 1.05; // Đọc chậm lại chút cho sang
+      utterance.pitch = 1.1; // Nâng tông xíu cho có cảm xúc
+      const bestVoice = getBestVietnameseVoice();
+      if (bestVoice) utterance.voice = bestVoice;
+
       window.speechSynthesis.speak(utterance);
     }
   };
 
-  // 🎙️ HÀM BÌNH LUẬN VIÊN ESPORTS CẢM XÚC
   const speakScore = (s1: number, s2: number, scorer: 1 | 2, streakCount: number, brokeOpponentStreak: boolean) => {
     if (!voiceEnabled || typeof window === "undefined" || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
@@ -140,22 +161,22 @@ export default function Home() {
     const sScorer = scorer === 1 ? s1 : s2;
     const sOpponent = scorer === 1 ? s2 : s1;
 
-    let text = `${scorerName} ${sScorer}, ${opponentName} ${sOpponent}`; // Default
+    let text = `${scorerName} ${sScorer}, ${opponentName} ${sOpponent}`; 
     let pitch = 1.0;
+    let rate = 1.1;
 
-    // Phân tích kịch bản bình luận
     if (s1 === maxScore - 1 && s2 === maxScore - 1) {
-      text = `Hai đội đều ${s1}! Deuce! Chúng ta đang bước vào những loạt cầu sinh tử! Quá nghẹt thở!`;
-      pitch = 1.3;
+      text = `Hai đội đều ${s1}! Chúng ta đang bước vào những loạt cầu sinh tử! Quá nghẹt thở!`;
+      pitch = 1.2; rate = 1.15;
     } else if (sScorer === maxScore - 1) {
       text = `Match point cho ${scorerName}! Cơ hội kết thúc trận đấu đã tới rất gần! ${sScorer} - ${sOpponent}`;
-      pitch = 1.2;
+      pitch = 1.15; rate = 1.1;
     } else if (brokeOpponentStreak) {
-      text = `Tuyệt vời! Một pha cắt chuỗi lên điểm thần sầu của ${scorerName}! Ngắt ngay đà hưng phấn của đối thủ. Tỷ số là ${sScorer} - ${sOpponent}`;
+      text = `Tuyệt vời! Một pha cắt chuỗi lên điểm thần sầu của ${scorerName}! Tỷ số là ${sScorer} - ${sOpponent}`;
       pitch = 1.1;
     } else if (streakCount === 5) {
-      text = `Năm điểm liên tiếp! ${scorerName} đang thăng hoa không thể cản phá! Khoảng cách hiện tại ${sScorer} - ${sOpponent}`;
-      pitch = 1.2;
+      text = `Năm điểm liên tiếp! ${scorerName} đang thăng hoa không thể cản phá! Tỷ số ${sScorer} - ${sOpponent}`;
+      pitch = 1.2; rate = 1.15;
     } else if (s1 === s2 && s1 >= 15) {
       text = `Cân bằng ${s1} đều! Giai đoạn cuối trận đang vô cùng căng thẳng!`;
     } else if (sScorer - sOpponent >= 8) {
@@ -163,17 +184,23 @@ export default function Home() {
     }
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'vi-VN'; utterance.rate = 1.15; utterance.pitch = pitch;
+    utterance.lang = 'vi-VN'; 
+    utterance.rate = rate; 
+    utterance.pitch = pitch;
+    
+    // Ép giọng Premium
+    const bestVoice = getBestVietnameseVoice();
+    if (bestVoice) utterance.voice = bestVoice;
+
     window.speechSynthesis.speak(utterance);
   };
 
   const handleScore1Change = (newS1: number) => {
     vibrate(50); playSfx('ting'); setScore1(newS1);
     
-    // Tính toán chuỗi điểm
     let newStreakCount = 1;
     if (pointStreak.team === 1) newStreakCount = pointStreak.count + 1;
-    const wasOpponentOnStreak = pointStreak.team === 2 && pointStreak.count >= 4; // Đối thủ bị cắt chuỗi khi đang ăn 4đ
+    const wasOpponentOnStreak = pointStreak.team === 2 && pointStreak.count >= 4; 
     setPointStreak({team: 1, count: newStreakCount});
 
     if (newS1 >= maxScore && score1 < maxScore) triggerWin(team1Name, newS1, score2Ref.current);
@@ -183,7 +210,6 @@ export default function Home() {
   const handleScore2Change = (newS2: number) => {
     vibrate(50); playSfx('ting'); setScore2(newS2);
     
-    // Tính toán chuỗi điểm
     let newStreakCount = 1;
     if (pointStreak.team === 2) newStreakCount = pointStreak.count + 1;
     const wasOpponentOnStreak = pointStreak.team === 1 && pointStreak.count >= 4;
