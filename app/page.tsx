@@ -16,7 +16,9 @@ export default function Home() {
   const [isListening, setIsListening] = useState(false); 
   const [showPosterBtn, setShowPosterBtn] = useState(false); 
 
-  // Dùng Ref để AI luôn lấy được dữ liệu mới nhất (Điểm và Tên Đội)
+  // 🔥 State mới để theo dõi Chuỗi Điểm (Point Streak)
+  const [pointStreak, setPointStreak] = useState<{team: 1 | 2 | 0, count: number}>({team: 0, count: 0});
+
   const score1Ref = useRef(0);
   const score2Ref = useRef(0);
   const team1NameRef = useRef("");
@@ -49,7 +51,7 @@ export default function Home() {
     if (t1 || t2) {
       setTeam1Name(t1 ? decodeURIComponent(t1) : "ĐỘI 1");
       setTeam2Name(t2 ? decodeURIComponent(t2) : "ĐỘI 2");
-      setScore1(0); setScore2(0);
+      setScore1(0); setScore2(0); setPointStreak({team: 0, count: 0});
       window.history.replaceState(null, '', '/'); 
     } else if (saved) {
       const data = JSON.parse(saved);
@@ -73,7 +75,9 @@ export default function Home() {
 
   const playSfx = (type: 'ting' | 'save' | 'reset' | 'win' | 'mic') => {
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
       const osc = ctx.createOscillator(); const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
       if (type === 'ting') {
@@ -98,7 +102,8 @@ export default function Home() {
     } catch (e) {}
   };
 
-  const triggerWin = (winnerTeam: string) => {
+  // 🏆 HÀM BÌNH LUẬN KẾT QUẢ KHI CHIẾN THẮNG
+  const triggerWin = (winnerTeam: string, s1: number, s2: number) => {
     playSfx('win'); vibrate([100, 50, 100, 50, 300]); 
     if ((window as any).confetti) {
       const end = Date.now() + 3000;
@@ -109,45 +114,89 @@ export default function Home() {
       };
       frame();
     }
+    
     if (voiceEnabled && typeof window !== "undefined" && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(`Trận đấu kết thúc! Phần thắng thuộc về ${winnerTeam}`);
-      utterance.lang = 'vi-VN'; utterance.rate = 1.0;
+      
+      const diff = Math.abs(s1 - s2);
+      let winText = `Trận đấu kết thúc! Phần thắng thuộc về ${winnerTeam}!`;
+      if (diff >= 10) winText = `Trận đấu kết thúc! Một chiến thắng hủy diệt hoàn toàn nghiêng về ${winnerTeam}!`;
+      else if (diff <= 2) winText = `Tuyệt vời! Một chiến thắng vô cùng nghẹt thở và cảm xúc dành cho nhà vô địch ${winnerTeam}!`;
+
+      const utterance = new SpeechSynthesisUtterance(winText);
+      utterance.lang = 'vi-VN'; utterance.rate = 1.0; utterance.pitch = 1.2;
       window.speechSynthesis.speak(utterance);
     }
   };
 
-  const speakScore = (s1: number, s2: number, scorer: 1 | 2) => {
+  // 🎙️ HÀM BÌNH LUẬN VIÊN ESPORTS CẢM XÚC
+  const speakScore = (s1: number, s2: number, scorer: 1 | 2, streakCount: number, brokeOpponentStreak: boolean) => {
     if (!voiceEnabled || typeof window === "undefined" || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     if (s1 >= maxScore || s2 >= maxScore) return;
-    const text = scorer === 1 ? `${team1Name} ${s1}, ${team2Name} ${s2}` : `${team2Name} ${s2}, ${team1Name} ${s1}`;
+
+    const scorerName = scorer === 1 ? team1Name : team2Name;
+    const opponentName = scorer === 1 ? team2Name : team1Name;
+    const sScorer = scorer === 1 ? s1 : s2;
+    const sOpponent = scorer === 1 ? s2 : s1;
+
+    let text = `${scorerName} ${sScorer}, ${opponentName} ${sOpponent}`; // Default
+    let pitch = 1.0;
+
+    // Phân tích kịch bản bình luận
+    if (s1 === maxScore - 1 && s2 === maxScore - 1) {
+      text = `Hai đội đều ${s1}! Deuce! Chúng ta đang bước vào những loạt cầu sinh tử! Quá nghẹt thở!`;
+      pitch = 1.3;
+    } else if (sScorer === maxScore - 1) {
+      text = `Match point cho ${scorerName}! Cơ hội kết thúc trận đấu đã tới rất gần! ${sScorer} - ${sOpponent}`;
+      pitch = 1.2;
+    } else if (brokeOpponentStreak) {
+      text = `Tuyệt vời! Một pha cắt chuỗi lên điểm thần sầu của ${scorerName}! Ngắt ngay đà hưng phấn của đối thủ. Tỷ số là ${sScorer} - ${sOpponent}`;
+      pitch = 1.1;
+    } else if (streakCount === 5) {
+      text = `Năm điểm liên tiếp! ${scorerName} đang thăng hoa không thể cản phá! Khoảng cách hiện tại ${sScorer} - ${sOpponent}`;
+      pitch = 1.2;
+    } else if (s1 === s2 && s1 >= 15) {
+      text = `Cân bằng ${s1} đều! Giai đoạn cuối trận đang vô cùng căng thẳng!`;
+    } else if (sScorer - sOpponent >= 8) {
+      text = `${scorerName} ${sScorer}, ${opponentName} ${sOpponent}. Sức mạnh hủy diệt đang được thể hiện!`;
+    }
+
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'vi-VN'; utterance.rate = 1.1;
+    utterance.lang = 'vi-VN'; utterance.rate = 1.15; utterance.pitch = pitch;
     window.speechSynthesis.speak(utterance);
   };
 
   const handleScore1Change = (newS1: number) => {
     vibrate(50); playSfx('ting'); setScore1(newS1);
-    if (newS1 >= maxScore && score1 < maxScore) triggerWin(team1Name);
-    else speakScore(newS1, score2Ref.current, 1);
+    
+    // Tính toán chuỗi điểm
+    let newStreakCount = 1;
+    if (pointStreak.team === 1) newStreakCount = pointStreak.count + 1;
+    const wasOpponentOnStreak = pointStreak.team === 2 && pointStreak.count >= 4; // Đối thủ bị cắt chuỗi khi đang ăn 4đ
+    setPointStreak({team: 1, count: newStreakCount});
+
+    if (newS1 >= maxScore && score1 < maxScore) triggerWin(team1Name, newS1, score2Ref.current);
+    else speakScore(newS1, score2Ref.current, 1, newStreakCount, wasOpponentOnStreak);
   };
 
   const handleScore2Change = (newS2: number) => {
     vibrate(50); playSfx('ting'); setScore2(newS2);
-    if (newS2 >= maxScore && score2 < maxScore) triggerWin(team2Name);
-    else speakScore(score1Ref.current, newS2, 2);
+    
+    // Tính toán chuỗi điểm
+    let newStreakCount = 1;
+    if (pointStreak.team === 2) newStreakCount = pointStreak.count + 1;
+    const wasOpponentOnStreak = pointStreak.team === 1 && pointStreak.count >= 4;
+    setPointStreak({team: 2, count: newStreakCount});
+
+    if (newS2 >= maxScore && score2 < maxScore) triggerWin(team2Name, score1Ref.current, newS2);
+    else speakScore(score1Ref.current, newS2, 2, newStreakCount, wasOpponentOnStreak);
   };
 
-  // 🔤 THUẬT TOÁN LỘT DẤU TIẾNG VIỆT
   const toNonAccent = (str: string) => {
-    return str.toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Bỏ dấu sắc, huyền, hỏi, ngã, nặng
-      .replace(/đ/g, "d");             // Đổi đ thành d
+    return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
   };
 
-  // 🎙️ HÀM AI NGHE LỆNH GIỌNG NÓI (NÂNG CẤP BẮT TÊN CẦU THỦ)
   const toggleMic = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return alert("Trình duyệt không hỗ trợ nhận diện giọng nói! (Khuyên dùng Chrome/Safari)");
@@ -159,39 +208,29 @@ export default function Home() {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'vi-VN';
-    recognition.continuous = true;
+    recognition.lang = 'vi-VN'; recognition.continuous = true;
     
     recognition.onstart = () => { setIsListening(true); playSfx('mic'); vibrate(50); };
     recognition.onresult = (event: any) => {
       const rawTranscript = event.results[event.results.length - 1][0].transcript;
-      const transcript = toNonAccent(rawTranscript); // Đưa câu nói về không dấu
-      console.log("AI Nghe được (Gốc):", rawTranscript, "-> (Lột dấu):", transcript);
+      const transcript = toNonAccent(rawTranscript);
       
-      // Bóc tách tên các thành viên của Đội 1 và Đội 2
-      // (Ví dụ: "Dean & Liên" -> ["dean", "lien"])
       const t1Players = team1NameRef.current.split('&').map(n => toNonAccent(n.trim())).filter(n => n.length > 0);
       const t2Players = team2NameRef.current.split('&').map(n => toNonAccent(n.trim())).filter(n => n.length > 0);
 
-      // Kiểm tra xem trong câu nói có chứa Tên của người nào không
       const mentionedT1 = t1Players.some(name => transcript.includes(name));
       const mentionedT2 = t2Players.some(name => transcript.includes(name));
 
-      // Kiểm tra cả các từ khóa chung (Bên trái, bên phải...)
       const isTeam1 = mentionedT1 || transcript.includes("doi 1") || transcript.includes("doi mot") || transcript.includes("ben trai") || transcript.includes("doi do");
       const isTeam2 = mentionedT2 || transcript.includes("doi 2") || transcript.includes("doi hai") || transcript.includes("ben phai") || transcript.includes("doi xanh");
       
-      if (isTeam1 && !isTeam2) {
-        handleScore1Change(score1Ref.current + 1);
-      } else if (isTeam2 && !isTeam1) {
-        handleScore2Change(score2Ref.current + 1);
-      }
+      if (isTeam1 && !isTeam2) handleScore1Change(score1Ref.current + 1);
+      else if (isTeam2 && !isTeam1) handleScore2Change(score2Ref.current + 1);
     };
     recognition.onerror = () => setIsListening(false);
     recognition.onend = () => setIsListening(false);
     
-    recognition.start();
-    (window as any).recognition = recognition;
+    recognition.start(); (window as any).recognition = recognition;
   };
 
   const capturePoster = () => {
@@ -202,12 +241,11 @@ export default function Home() {
     (window as any).html2canvas(el, { backgroundColor: "#050505", scale: 2 }).then((canvas: any) => {
       const link = document.createElement("a");
       link.download = `CyberMatch_${team1Name}_vs_${team2Name}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      link.href = canvas.toDataURL("image/png"); link.click();
     });
   };
 
-  const resetScores = () => { if (confirm("Reset trận đấu này?")) { setScore1(0); setScore2(0); } };
+  const resetScores = () => { if (confirm("Reset trận đấu này?")) { setScore1(0); setScore2(0); setPointStreak({team: 0, count: 0}); } };
 
   const saveMatch = () => {
     if (score1 === 0 && score2 === 0) return alert("WARNING: Trận chưa có điểm!");
@@ -237,7 +275,7 @@ export default function Home() {
     localStorage.setItem("cyber_players", JSON.stringify(players));
     
     alert(`✅ LƯU THÀNH CÔNG!\nĐã cập nhật hệ số Elo và Chuỗi thắng.`);
-    setScore1(0); setScore2(0);
+    setScore1(0); setScore2(0); setPointStreak({team: 0, count: 0});
   };
 
   if (!isLoaded) return <div className="min-h-screen bg-[#050505]"></div>;
